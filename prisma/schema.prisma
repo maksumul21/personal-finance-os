@@ -90,6 +90,49 @@ enum AllocationKind {
   INVESTMENT
 }
 
+enum GoalType {
+  GOAL
+  EMERGENCY_FUND
+  SINKING_FUND
+}
+
+enum GoalStatus {
+  ACTIVE
+  ACHIEVED
+  ARCHIVED
+}
+
+enum GoalPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ContributionDirection {
+  DEPOSIT
+  WITHDRAWAL
+}
+
+/// Unit of a repeating schedule: "every `interval` units". Quarterly = MONTHLY x 3.
+enum RepeatUnit {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum ScheduleStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum OccurrenceState {
+  PENDING
+  PAID
+  SKIPPED
+}
+
 enum DashboardPeriod {
   THIS_MONTH
   LAST_MONTH
@@ -120,6 +163,9 @@ model User {
   tags         Tag[]
   rates        ExchangeRate[]
   budgets      Budget[]
+  goals        SavingsGoal[]
+  recurring    RecurringRule[]
+  bills        Bill[]
 }
 
 model UserSettings {
@@ -159,8 +205,12 @@ model Account {
   createdAt            DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime     @updatedAt @db.Timestamptz(3)
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries LedgerEntry[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries       LedgerEntry[]
+  goals         SavingsGoal[]
+  recurringFrom RecurringRule[] @relation("RecurringFrom")
+  recurringTo   RecurringRule[] @relation("RecurringTo")
+  bills         Bill[]
 
   @@unique([userId, name])
   @@index([userId, isArchived])
@@ -188,6 +238,8 @@ model Category {
   children     Category[]         @relation("CategoryTree")
   transactions Transaction[]
   allocations  BudgetAllocation[]
+  recurring    RecurringRule[]
+  bills        Bill[]
 
   @@index([userId, kind, isArchived])
   @@index([parentId])
@@ -215,10 +267,14 @@ model Transaction {
   createdAt       DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category Category?        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  entries  LedgerEntry[]
-  tags     TransactionTag[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         Category?         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  entries          LedgerEntry[]
+  tags             TransactionTag[]
+  /// Set when created by a goal contribution (TRANSFER) or a bill payment (EXPENSE).
+  goalContribution GoalContribution?
+  billOccurrence   BillOccurrence?
+  recurringRule    RecurringRule?    @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
 
   @@unique([recurringRuleId, occurrenceDate])
   @@index([userId, date(sort: Desc)])
@@ -327,6 +383,135 @@ model BudgetAllocation {
 
   @@unique([budgetId, categoryId])
   @@index([categoryId])
+}
+
+// ───────────────────────────── Savings goals ─────────────────────────────
+
+model SavingsGoal {
+  id               String       @id @default(uuid()) @db.Uuid
+  userId           String       @db.Uuid
+  name             String
+  goalType         GoalType     @default(GOAL)
+  /// Emergency fund: derived as essentialMonthly x targetMonths (kept in sync by the service).
+  targetAmount     Decimal      @db.Decimal(19, 4)
+  targetDate       DateTime?    @db.Date
+  description      String?
+  icon             String       @default("piggy-bank")
+  color            String       @default("#0d9488")
+  priority         GoalPriority @default(MEDIUM)
+  /// Where the saved money lives. Contributions from another account move money into it.
+  linkedAccountId  String?      @db.Uuid
+  essentialMonthly Decimal?     @db.Decimal(19, 4)
+  targetMonths     Int?         @db.SmallInt
+  status           GoalStatus   @default(ACTIVE)
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(3)
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedAccount Account?           @relation(fields: [linkedAccountId], references: [id], onDelete: SetNull)
+  contributions GoalContribution[]
+
+  @@index([userId, status])
+}
+
+model GoalContribution {
+  id            String                @id @default(uuid()) @db.Uuid
+  goalId        String                @db.Uuid
+  userId        String                @db.Uuid
+  direction     ContributionDirection
+  amount        Decimal               @db.Decimal(19, 4)
+  date          DateTime              @db.Date
+  notes         String?
+  /// The real transfer behind this contribution; null for an earmark of money already in place.
+  transactionId String?               @unique @db.Uuid
+  createdAt     DateTime              @default(now()) @db.Timestamptz(3)
+
+  goal        SavingsGoal  @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([goalId, date])
+  @@index([userId])
+}
+
+// ───────────────────────────── Recurring transactions ─────────────────────────────
+
+model RecurringRule {
+  id             String          @id @default(uuid()) @db.Uuid
+  userId         String          @db.Uuid
+  type           TransactionType
+  amount         Decimal         @db.Decimal(19, 4)
+  categoryId     String?         @db.Uuid
+  accountId      String          @db.Uuid
+  toAccountId    String?         @db.Uuid
+  /// Cross-currency transfers only.
+  toAmount       Decimal?        @db.Decimal(19, 4)
+  description    String?
+  unit           RepeatUnit
+  interval       Int             @default(1) @db.SmallInt
+  startDate      DateTime        @db.Date
+  endDate        DateTime?       @db.Date
+  /// Next occurrence not yet posted. Null once the schedule has ended.
+  nextOccurrence DateTime?       @db.Date
+  status         ScheduleStatus  @default(ACTIVE)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+
+  /// Cascades exist so deleting a user works; the services refuse to delete an account or
+  /// category a schedule still uses.
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     Category?     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  account      Account       @relation("RecurringFrom", fields: [accountId], references: [id], onDelete: Cascade)
+  toAccount    Account?      @relation("RecurringTo", fields: [toAccountId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([status, nextOccurrence])
+  @@index([userId])
+}
+
+// ───────────────────────────── Bills & subscriptions ─────────────────────────────
+
+model Bill {
+  id               String         @id @default(uuid()) @db.Uuid
+  userId           String         @db.Uuid
+  name             String
+  amount           Decimal        @db.Decimal(19, 4)
+  categoryId       String         @db.Uuid
+  paymentAccountId String         @db.Uuid
+  /// Null unit = one-off bill.
+  unit             RepeatUnit?
+  interval         Int            @default(1) @db.SmallInt
+  firstDueDate     DateTime       @db.Date
+  endDate          DateTime?      @db.Date
+  isSubscription   Boolean        @default(false)
+  notes            String?
+  status           ScheduleStatus @default(ACTIVE)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  paymentAccount Account          @relation(fields: [paymentAccountId], references: [id], onDelete: Cascade)
+  occurrences    BillOccurrence[]
+
+  @@index([userId, status])
+}
+
+model BillOccurrence {
+  id            String          @id @default(uuid()) @db.Uuid
+  billId        String          @db.Uuid
+  userId        String          @db.Uuid
+  dueDate       DateTime        @db.Date
+  amount        Decimal         @db.Decimal(19, 4)
+  state         OccurrenceState @default(PENDING)
+  /// The expense recorded for this payment. Unique: one payment can't settle two occurrences.
+  transactionId String?         @unique @db.Uuid
+  paidAt        DateTime?       @db.Date
+
+  bill        Bill         @relation(fields: [billId], references: [id], onDelete: Cascade)
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@unique([billId, dueDate])
+  @@index([userId, dueDate])
 }
 
 // ───────────────────────────── Audit ─────────────────────────────

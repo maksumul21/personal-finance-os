@@ -87,6 +87,13 @@ export async function deleteCategory(userId: string, id: string) {
     });
     if (!existing) throw new UserFacingError("Category not found.");
     if (existing._count.children > 0) throw new UserFacingError("Delete or move its subcategories first.");
+    const [rules, bills] = await Promise.all([
+      tx.recurringRule.count({ where: { userId, categoryId: id } }),
+      tx.bill.count({ where: { userId, categoryId: id } }),
+    ]);
+    if (rules + bills > 0) {
+      throw new UserFacingError("A recurring transaction or bill uses this category. Change or delete those first.");
+    }
     if (existing._count.allocations > 0) {
       throw new UserFacingError("A budget uses this category. Remove it from the budget or archive the category instead.");
     }

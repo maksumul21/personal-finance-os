@@ -101,12 +101,20 @@ async function prepare(tx: DbTx, ctx: Ctx, values: TransactionFormValues, existi
   return { input, currency: account.currency, categoryId: values.categoryId, isRefund };
 }
 
+/** Where a transaction came from; recurring ones carry the idempotency key (rule, occurrence). */
+export interface PostOrigin {
+  source?: "MANUAL" | "RECURRING" | "BILL" | "GOAL";
+  recurringRuleId?: string;
+  occurrenceDate?: string;
+}
+
 async function persist(
   tx: DbTx,
   ctx: Ctx,
   values: TransactionFormValues,
   prepared: Awaited<ReturnType<typeof prepare>>,
   id?: string,
+  origin: PostOrigin = {},
 ) {
   const posting = buildPosting(prepared.input);
   assertPostingInvariants(prepared.input.type, posting.entries);
@@ -126,7 +134,15 @@ async function persist(
 
   const transaction = id
     ? await tx.transaction.update({ where: { id }, data })
-    : await tx.transaction.create({ data: { userId: ctx.userId, ...data } });
+    : await tx.transaction.create({
+        data: {
+          userId: ctx.userId,
+          ...data,
+          source: origin.source ?? "MANUAL",
+          recurringRuleId: origin.recurringRuleId ?? null,
+          occurrenceDate: origin.occurrenceDate ? dayToDb(origin.occurrenceDate) : null,
+        },
+      });
 
   if (id) {
     await tx.ledgerEntry.deleteMany({ where: { transactionId: id } });
@@ -149,13 +165,34 @@ async function persist(
   return transaction;
 }
 
+/**
+ * Validates and posts a transaction inside an existing DB transaction. Used by goals, bills and
+ * the recurring processor so their own rows and the ledger change atomically.
+ */
+export async function postTransactionTx(tx: DbTx, ctx: Ctx, values: TransactionFormValues, origin: PostOrigin = {}) {
+  const prepared = await prepare(tx, ctx, values);
+  const created = await persist(tx, ctx, values, prepared, undefined, origin);
+  await audit(tx, ctx.userId, "transaction.create", "Transaction", created.id, undefined, { ...values, ...origin });
+  return { id: created.id };
+}
+
+/** Runs every check a real posting would (ownership, archive state, category kind, rate) without saving. */
+export async function validateTransactionTx(tx: DbTx, ctx: Ctx, values: TransactionFormValues) {
+  const prepared = await prepare(tx, ctx, values);
+  const posting = buildPosting(prepared.input);
+  assertPostingInvariants(prepared.input.type, posting.entries);
+}
+
+/** Deletes a transaction inside an existing DB transaction (entries and tags cascade). */
+export async function removeTransactionTx(tx: DbTx, ctx: Ctx, id: string) {
+  const existing = await tx.transaction.findFirst({ where: { id, userId: ctx.userId }, include: { entries: true } });
+  if (!existing) throw new UserFacingError("Transaction not found.");
+  await tx.transaction.delete({ where: { id: existing.id } });
+  await audit(tx, ctx.userId, "transaction.delete", "Transaction", id, existing);
+}
+
 export async function createTransaction(ctx: Ctx, values: TransactionFormValues) {
-  return db.$transaction(async (tx) => {
-    const prepared = await prepare(tx, ctx, values);
-    const created = await persist(tx, ctx, values, prepared);
-    await audit(tx, ctx.userId, "transaction.create", "Transaction", created.id, undefined, { ...values });
-    return { id: created.id };
-  });
+  return db.$transaction((tx) => postTransactionTx(tx, ctx, values));
 }
 
 /**
@@ -166,9 +203,15 @@ export async function updateTransaction(ctx: Ctx, id: string, values: Transactio
   return db.$transaction(async (tx) => {
     const existing = await tx.transaction.findFirst({
       where: { id, userId: ctx.userId },
-      include: { entries: { select: { accountId: true } } },
+      include: { entries: { select: { accountId: true } }, goalContribution: { select: { id: true } }, billOccurrence: { select: { id: true } } },
     });
     if (!existing) throw new UserFacingError("Transaction not found.");
+    if (existing.goalContribution) {
+      throw new UserFacingError("This transfer belongs to a savings goal contribution. Edit it from the goal.");
+    }
+    if (existing.billOccurrence && values.type !== "EXPENSE") {
+      throw new UserFacingError("This expense paid a bill, so it must stay an expense. Unmark the bill payment to change it.");
+    }
     const prepared = await prepare(tx, ctx, values, {
       categoryId: existing.categoryId,
       accountIds: new Set(existing.entries.map((e) => e.accountId)),
@@ -181,10 +224,21 @@ export async function updateTransaction(ctx: Ctx, id: string, values: Transactio
 
 export async function deleteTransaction(ctx: Ctx, id: string) {
   return db.$transaction(async (tx) => {
-    const existing = await tx.transaction.findFirst({ where: { id, userId: ctx.userId }, include: { entries: true } });
-    if (!existing) throw new UserFacingError("Transaction not found.");
-    await tx.transaction.delete({ where: { id: existing.id } });
-    await audit(tx, ctx.userId, "transaction.delete", "Transaction", id, existing);
+    const linked = await tx.transaction.findFirst({
+      where: { id, userId: ctx.userId },
+      select: { goalContribution: { select: { id: true } }, billOccurrence: { select: { id: true } } },
+    });
+    if (linked?.goalContribution) {
+      throw new UserFacingError("This transfer belongs to a savings goal contribution. Delete it from the goal.");
+    }
+    // Deleting a bill payment puts the bill back to unpaid.
+    if (linked?.billOccurrence) {
+      await tx.billOccurrence.update({
+        where: { id: linked.billOccurrence.id },
+        data: { state: "PENDING", paidAt: null, transactionId: null },
+      });
+    }
+    await removeTransactionTx(tx, ctx, id);
     return { id };
   });
 }
