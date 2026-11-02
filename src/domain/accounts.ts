@@ -44,6 +44,8 @@ export interface AccountBalanceRow {
   isArchived: boolean;
   /** Balance already converted to the base currency, or null when no rate is recorded. */
   baseBalance: MoneyInput | null;
+  /** Market value in the base currency (investment accounts, D-029); defaults to baseBalance. */
+  baseValue?: MoneyInput | null;
 }
 
 export interface AccountTotals {
@@ -51,8 +53,8 @@ export interface AccountTotals {
   totalBalance: Money;
   totalLiabilities: Money;
   /**
-   * Σ signed balances of every active account. Investment accounts count at their ledger
-   * balance (money put in) until holdings are valued at market in Phase 4 (DECISIONS.md D-022).
+   * Σ signed values of every active account: investment accounts at market value (ledger
+   * balance + realised and unrealised gains, D-029), everything else at its balance.
    */
   netWorth: Money;
   /** Active accounts whose balance could not be converted to the base currency. */
@@ -70,7 +72,7 @@ export function accountTotals(rows: Iterable<AccountBalanceRow>): AccountTotals 
       unconvertedCount++;
       continue;
     }
-    netWorth = netWorth.plus(toMoney(row.baseBalance));
+    netWorth = netWorth.plus(toMoney(row.baseValue ?? row.baseBalance));
     if (accountNature(row.type) === "LIABILITY") {
       totalLiabilities = totalLiabilities.plus(liabilityOutstanding(row.baseBalance));
       // A card in credit (positive balance) is money you hold.

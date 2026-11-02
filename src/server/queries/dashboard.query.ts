@@ -2,6 +2,7 @@ import "server-only";
 import { format, parseISO } from "date-fns";
 import type { Thresholds } from "@/domain/budget";
 import { pickRate, toBase } from "@/domain/fx";
+import { valuationAdjustment } from "@/domain/investments";
 import { buildInsights, type Insight } from "@/domain/insights";
 import { incomeExpenseTotals } from "@/domain/ledger";
 import { savings, savingsRate } from "@/domain/metrics";
@@ -19,6 +20,7 @@ import {
 import { formatMoney, type NumberFormatPref } from "@/lib/format";
 import { db } from "../db";
 import { getAccountsOverview } from "./accounts.query";
+import { loadHoldings } from "./holdings.data";
 import { getUpcomingBills, type OccurrenceDTO } from "./bills.query";
 import { getActiveBudget, type BudgetDetailDTO } from "./budgets.query";
 import { getGoals } from "./goals.query";
@@ -113,18 +115,20 @@ async function monthlyTotals(userId: string, from: Day, to: Day) {
 /**
  * Month-end net worth from active accounts (assets − liabilities), matching the net worth KPI.
  * Opening balances count from their opening date; foreign ones convert at the latest recorded
- * rate. Investment accounts count at ledger balance until market valuation (D-022).
+ * rate. Investment accounts add their realised and unrealised gains as of each month-end, using
+ * the trades and prices recorded by then (D-029).
  */
 async function netWorthByMonth(userId: string, baseCurrency: string, months: string[]) {
   const lastDay = endOfMonthDay(`${months.at(-1)}-01`);
-  const [accounts, entries, rates] = await Promise.all([
-    db.account.findMany({ where: { userId, isArchived: false }, select: { currency: true, openingBalance: true, openingDate: true } }),
+  const [accounts, entries, rates, holdings] = await Promise.all([
+    db.account.findMany({ where: { userId, isArchived: false }, select: { id: true, currency: true, openingBalance: true, openingDate: true } }),
     db.$queryRaw<{ month: string; total: unknown }[]>`
       SELECT to_char(date_trunc('month', e."date"), 'YYYY-MM') AS month, SUM(e."baseAmount") AS total
       FROM "LedgerEntry" e JOIN "Account" a ON a."id" = e."accountId"
       WHERE e."userId" = ${userId}::uuid AND NOT a."isArchived" AND e."date" <= ${dayToDb(lastDay)}::date
       GROUP BY 1 ORDER BY 1`,
     db.exchangeRate.findMany({ where: { userId }, select: { currency: true, date: true, rate: true } }),
+    loadHoldings(userId),
   ]);
   const recorded = rates.map((r) => ({ currency: r.currency, date: dbToDay(r.date), rate: r.rate }));
 
@@ -133,7 +137,9 @@ async function netWorthByMonth(userId: string, baseCurrency: string, months: str
     let total = ZERO;
     for (const a of accounts) {
       if (dbToDay(a.openingDate) > end) continue;
-      const base = toBase(a.openingBalance, a.currency, baseCurrency, pickRate(recorded, a.currency, "9999-12-31"));
+      const rate = pickRate(recorded, a.currency, "9999-12-31");
+      const opening = toMoney(a.openingBalance).plus(valuationAdjustment(holdings.get(a.id) ?? [], end));
+      const base = toBase(opening, a.currency, baseCurrency, rate);
       if (base === null) return null; // can't value this month honestly
       total = total.plus(base);
     }

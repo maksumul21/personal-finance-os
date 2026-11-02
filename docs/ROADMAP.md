@@ -7,9 +7,9 @@ with integration tests, UI, browser check — before the next starts. Status of 
 ## Now: Phase 4 — Debt, investments, net worth
 
 1. ~~Debt & loan management~~ — done 2026-11-02 (D-026 – D-028).
-2. **Investment tracker** (next) — holdings (asset, units, cost), recorded prices, market value,
+2. ~~Investment tracker~~ — done 2026-11-02 (D-029). Was: holdings (asset, units, cost), recorded prices, market value,
    gain/loss; INVESTMENT accounts switch from ledger value to market value (replaces D-022).
-3. **Net worth tracker** — page with history; manual assets and liabilities; uses 1 and 2.
+3. **Net worth tracker** (next) — page with history; manual assets and liabilities; uses 1 and 2.
 
 ## Phase 5 — Planning and insight
 

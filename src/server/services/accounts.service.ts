@@ -57,6 +57,10 @@ export async function updateAccount(userId: string, id: string, values: AccountF
     if (loan && (values.type !== "LOAN" || values.currency !== existing.currency)) {
       throw new UserFacingError("This account has loan details. Remove them in Debts before changing its type or currency.", "type");
     }
+    const holdings = await tx.holding.count({ where: { accountId: id, userId } });
+    if (holdings > 0 && (values.type !== "INVESTMENT" || values.currency !== existing.currency)) {
+      throw new UserFacingError("This account has holdings. Remove them in Investments before changing its type or currency.", "type");
+    }
     const updated = await tx.account.update({ where: { id: existing.id }, data: accountData(values) });
     await audit(tx, userId, "account.update", "Account", id, existing, updated);
     return { id };
@@ -87,6 +91,9 @@ export async function deleteAccount(userId: string, id: string) {
     const loans = await tx.loanTerms.count({ where: { userId, paymentAccountId: id } });
     if (rules + bills + loans > 0) {
       throw new UserFacingError("A recurring transaction, bill or loan uses this account. Change or delete those first.");
+    }
+    if ((await tx.holding.count({ where: { userId, accountId: id } })) > 0) {
+      throw new UserFacingError("This account has holdings. Delete them in Investments first.");
     }
     await tx.account.delete({ where: { id: existing.id } });
     await audit(tx, userId, "account.delete", "Account", id, existing);

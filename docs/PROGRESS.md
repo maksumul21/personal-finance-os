@@ -11,11 +11,11 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 1 — Foundation | Done and audited |
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
-| 4 — Debt, investments, net worth | In progress: Debt & loan management done; **Investment tracker next** |
+| 4 — Debt, investments, net worth | In progress: debts and investments done; **Net worth tracker next** |
 | 5–6 — Planning tools, reports, import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 12 tested, 7 logic-tested, 5 partial, 6 not started (see CHECKLIST.md).
-118 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 13 tested, 7 logic-tested, 5 partial, 5 not started (see CHECKLIST.md).
+128 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -24,6 +24,18 @@ Of the 30 PRD modules: 12 tested, 7 logic-tested, 5 partial, 6 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-02 — Investment tracker (Phase 4, module 2)
+
+- Migration `phase4_investments`: `Holding`, `HoldingTrade`, `HoldingPrice` (CHECKs, RLS).
+- `domain/investments.ts` (average cost, valuation, uninvested cash), `services/investments.service.ts`
+  (holdings, trades with oversell/unfunded-buy checks, prices), `queries/investments.query.ts`,
+  shared `queries/holdings.data.ts`, `/investments` page.
+- Net worth KPI and month-end trend now value investment accounts at market (D-029, replaces D-022).
+- Tests: 7 unit + 3 integration; 128 total pass. Browser: unfunded buy refused ("short by 5000.00"),
+  buy 10 @ ৳1,000, price ৳1,200 → +৳2,000 (+20%), dashboard net worth +৳22,000 with expenses
+  unchanged. Test data removed with a one-off script after the app window was hidden.
+- Not committed (awaiting approval). Mobile layout of `/investments` not re-checked.
 
 ### 2026-11-02 — Debt & loan management (Phase 4, module 1)
 

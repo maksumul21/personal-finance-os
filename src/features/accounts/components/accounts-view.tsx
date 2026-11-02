@@ -110,6 +110,9 @@ function AccountRow({
         ) : (
           <>
             <Money value={account.balance} currency={account.currency} pref={pref} tone="auto" className="text-sm font-semibold" />
+            {account.type === "INVESTMENT" && account.value !== account.balance && (
+              <p className="tabular text-xs text-muted-foreground">worth {formatMoney(account.value, account.currency, { pref })}</p>
+            )}
             {account.currency !== baseCurrency && (
               <p className="tabular text-xs text-muted-foreground">
                 {account.baseBalance === null ? "no rate recorded" : `≈ ${formatMoney(account.baseBalance, baseCurrency, { pref })}`}

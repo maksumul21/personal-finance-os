@@ -168,6 +168,9 @@ model User {
   bills        Bill[]
   loans        LoanTerms[]
   loanPayments LoanPayment[]
+  holdings     Holding[]
+  trades       HoldingTrade[]
+  prices       HoldingPrice[]
 }
 
 model UserSettings {
@@ -214,6 +217,7 @@ model Account {
   recurringTo   RecurringRule[] @relation("RecurringTo")
   bills         Bill[]
   loanTerms     LoanTerms?      @relation("LoanAccount")
+  holdings      Holding[]
   loansPaidFrom LoanTerms[]     @relation("LoanPaymentAccount")
 
   @@unique([userId, name])
@@ -589,5 +593,79 @@ model LoanPayment {
   interestTransaction  Transaction? @relation("LoanInterestTx", fields: [interestTransactionId], references: [id], onDelete: SetNull)
 
   @@index([loanId, date])
+  @@index([userId])
+}
+
+enum AssetClass {
+  STOCK
+  MUTUAL_FUND
+  BOND
+  SAVINGS_CERTIFICATE
+  FIXED_DEPOSIT
+  GOLD
+  CRYPTO
+  OTHER
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+/// Something held in an INVESTMENT account (DECISIONS.md D-029). Units and cost come from its
+/// trades (average cost); value from the latest recorded price.
+model Holding {
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String     @db.Uuid
+  accountId  String     @db.Uuid
+  name       String
+  symbol     String?
+  assetClass AssetClass @default(STOCK)
+  notes      String?
+  createdAt  DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime   @updatedAt @db.Timestamptz(3)
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  trades  HoldingTrade[]
+  prices  HoldingPrice[]
+
+  @@unique([accountId, name])
+  @@index([userId])
+}
+
+/// A buy or sell. Moves money between the account's cash and the holding; never a ledger entry.
+model HoldingTrade {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  holdingId String    @db.Uuid
+  side      TradeSide
+  date      DateTime  @db.Date
+  units     Decimal   @db.Decimal(24, 8)
+  /// BUY: total paid incl. fees. SELL: proceeds after fees. In the account's currency.
+  amount    Decimal   @db.Decimal(19, 4)
+  notes     String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holding Holding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@index([holdingId, date])
+  @@index([userId])
+}
+
+/// A recorded price per unit on a date. Valuation uses the latest on or before the date.
+model HoldingPrice {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  holdingId String   @db.Uuid
+  date      DateTime @db.Date
+  price     Decimal  @db.Decimal(24, 8)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holding Holding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@unique([holdingId, date])
   @@index([userId])
 }

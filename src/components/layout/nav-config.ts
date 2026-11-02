@@ -31,7 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/goals", label: "Savings Goals", icon: PiggyBank, available: true },
   { href: "/bills", label: "Bills & Subscriptions", icon: Receipt, available: true },
   { href: "/debts", label: "Debt Management", icon: CreditCard, available: true },
-  { href: "/investments", label: "Investments", icon: TrendingUp, available: false },
+  { href: "/investments", label: "Investments", icon: TrendingUp, available: true },
   { href: "/net-worth", label: "Net Worth", icon: Scale, available: false },
   { href: "/calendar", label: "Financial Calendar", icon: CalendarDays, available: false },
   { href: "/reports", label: "Reports & Analytics", icon: BarChart3, available: false },
