@@ -77,3 +77,18 @@ describe("comparable periods", () => {
     expect(monthsEnding("2026-02-15", 3)).toEqual(["2025-12", "2026-01", "2026-02"]);
   });
 });
+
+describe("insights: bills and emergency fund", () => {
+  it("flags overdue bills as critical and summarises the week ahead (PRD §4.5 example)", () => {
+    const r = buildInsights({ ...base, bills: { overdueCount: 2, dueSoonCount: 3, dueSoonTotal: "8500" } });
+    expect(r[0]).toMatchObject({ key: "bills-overdue", severity: "critical", message: "2 bills are overdue." });
+    expect(r.find((i) => i.key === "bills-due-soon")?.message).toBe("You have 3 upcoming bills totaling ৳8500.");
+  });
+
+  it("warns when the emergency fund is below target, and stays quiet once reached", () => {
+    const below = buildInsights({ ...base, emergencyFund: { saved: "60000", target: "180000", monthsCovered: "2.0", targetMonths: 6 } });
+    expect(below.find((i) => i.key === "emergency-fund-below-target")?.message).toBe("Your emergency fund covers 2.0 of 6 target months.");
+    const met = buildInsights({ ...base, emergencyFund: { saved: "180000", target: "180000", monthsCovered: "6.0", targetMonths: 6 } });
+    expect(met.some((i) => i.key === "emergency-fund-below-target")).toBe(false);
+  });
+});

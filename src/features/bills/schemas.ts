@@ -8,7 +8,7 @@ export const billFormSchema = z
     categoryId: z.uuid("Choose a category"),
     paymentAccountId: z.uuid("Choose the account it's paid from"),
     /** "ONCE" for a one-off bill. */
-    unit: z.enum(["ONCE", "WEEKLY", "MONTHLY", "YEARLY"]),
+    unit: z.enum(["ONCE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"]),
     interval: z.number().int().min(1).max(366),
     firstDueDate: z.iso.date("Pick the first due date"),
     endDate: z.iso.date("Pick a valid date").optional().or(z.literal("")),

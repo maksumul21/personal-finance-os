@@ -18,6 +18,7 @@ import type { TransactionPage } from "@/server/queries/transactions.query";
 import type { TransactionFilters } from "../schemas";
 import { useComposer } from "./composer";
 import { TransactionRow } from "./transaction-row";
+import { TransactionsTabs } from "./transactions-tabs";
 
 const ALL = "__all__";
 const PRESET_LABELS: Record<PeriodPreset, string> = {
@@ -226,6 +227,8 @@ export function TransactionsView({
           </Button>
         }
       />
+
+      <TransactionsTabs />
 
       <FilterBar key={JSON.stringify({ ...filters, page: 0 })} filters={filters} data={data} />
 

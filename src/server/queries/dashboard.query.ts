@@ -6,8 +6,9 @@ import { pickRate, toBase } from "@/domain/fx";
 import { buildInsights, type Insight } from "@/domain/insights";
 import { incomeExpenseTotals } from "@/domain/ledger";
 import { savings, savingsRate } from "@/domain/metrics";
-import { ZERO, toMoney, toMoneyString, type Money } from "@/domain/money";
+import { ZERO, sum, toMoney, toMoneyString, type Money } from "@/domain/money";
 import {
+  addDaysTo,
   comparablePeriods,
   dayToDb,
   dbToDay,
@@ -19,7 +20,9 @@ import {
 import { formatMoney, type NumberFormatPref } from "@/lib/format";
 import { db } from "../db";
 import { getAccountsOverview } from "./accounts.query";
+import { getUpcomingBills, type OccurrenceDTO } from "./bills.query";
 import { getActiveBudget, type BudgetDetailDTO } from "./budgets.query";
+import { getGoals } from "./goals.query";
 import { getRecentTransactions, type TransactionDTO } from "./transactions.query";
 
 export interface MonthPoint {
@@ -63,6 +66,8 @@ export interface DashboardDTO {
   breakdown: BreakdownSlice[];
   budget: BudgetDetailDTO | null;
   recent: TransactionDTO[];
+  /** PRD §4.4: overdue and due in the next 30 days. */
+  upcomingBills: { items: OccurrenceDTO[]; total: string | null };
   insights: Insight[];
 }
 
@@ -199,7 +204,7 @@ export async function getDashboard(opts: {
   const trendFrom = `${months[0]}-01`;
   const trendTo = endOfMonthDay(`${months.at(-1)}-01`);
 
-  const [accounts, now, prev, monthly, netWorth, slices, budget, recent] = await Promise.all([
+  const [accounts, now, prev, monthly, netWorth, slices, budget, recent, bills, goals] = await Promise.all([
     getAccountsOverview(userId, baseCurrency),
     totalsIn(userId, period),
     totalsIn(userId, previous),
@@ -208,7 +213,12 @@ export async function getDashboard(opts: {
     breakdown(userId, period),
     getActiveBudget(userId, today, opts.thresholds),
     getRecentTransactions(userId, 8),
+    getUpcomingBills(userId, today, 30),
+    getGoals(userId, today),
   ]);
+  const weekAhead = addDaysTo(today, 7);
+  const dueSoon = bills.items.filter((b) => b.status !== "OVERDUE" && b.dueDate <= weekAhead);
+  const ef = goals.find((g) => g.goalType === "EMERGENCY_FUND" && g.status === "ACTIVE");
   // Same-days comparison uses the elapsed part of the current period.
   const nowComparable = current.end === period.end ? now : await totalsIn(userId, current);
 
@@ -243,6 +253,12 @@ export async function getDashboard(opts: {
     budgetLines: (budget?.lines ?? [])
       .filter((l) => l.kind === "EXPENSE_CATEGORY")
       .map((l) => ({ name: l.name, usagePct: l.usagePct ? toMoney(l.usagePct) : null, state: l.state! })),
+    bills: {
+      overdueCount: bills.overdueCount,
+      dueSoonCount: dueSoon.length,
+      dueSoonTotal: dueSoon.length && dueSoon.every((b) => b.currency === baseCurrency) ? toMoneyString(sum(dueSoon.map((b) => b.amount))) : null,
+    },
+    emergencyFund: ef ? { saved: ef.saved, target: ef.target, monthsCovered: ef.monthsCovered, targetMonths: ef.targetMonths } : undefined,
     formatMoney: fmt,
   });
 
@@ -268,6 +284,7 @@ export async function getDashboard(opts: {
     breakdown: slices,
     budget,
     recent,
+    upcomingBills: { items: bills.items.slice(0, 6), total: bills.total },
     insights,
   };
 }

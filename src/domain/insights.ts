@@ -29,6 +29,10 @@ export interface InsightInput {
   categorySpending: { name: string; amount: MoneyInput }[];
   /** Budget lines for the active budget. */
   budgetLines: { name: string; usagePct: Money | null; state: "normal" | "warning" | "critical" | "overspent" }[];
+  /** Unpaid bills: overdue ones and those due within the next 7 days. */
+  bills?: { overdueCount: number; dueSoonCount: number; dueSoonTotal: string | null };
+  /** Emergency fund progress, when one exists. */
+  emergencyFund?: { saved: MoneyInput; target: MoneyInput; monthsCovered: string | null; targetMonths: number | null };
   formatMoney: (value: string) => string;
 }
 
@@ -112,6 +116,41 @@ export function buildInsights(i: InsightInput): Insight[] {
         severity: diff.greaterThan(0) ? "positive" : "warning",
         message: `Your savings rate ${diff.greaterThan(0) ? "improved" : "dropped"} by ${pct(diff.abs())} percentage points, to ${pct(rate)}%.`,
         basis: `${i.periodLabel} vs ${i.previousLabel}`,
+      });
+    }
+  }
+
+  if (i.bills?.overdueCount) {
+    out.push({
+      key: "bills-overdue",
+      severity: "critical",
+      message: `${i.bills.overdueCount} bill${i.bills.overdueCount > 1 ? "s are" : " is"} overdue.`,
+      basis: "Bills & subscriptions",
+    });
+  }
+  if (i.bills?.dueSoonCount) {
+    out.push({
+      key: "bills-due-soon",
+      severity: "info",
+      message:
+        `You have ${i.bills.dueSoonCount} upcoming bill${i.bills.dueSoonCount > 1 ? "s" : ""}` +
+        (i.bills.dueSoonTotal ? ` totaling ${i.formatMoney(i.bills.dueSoonTotal)}.` : "."),
+      basis: "Due in the next 7 days",
+    });
+  }
+
+  if (i.emergencyFund) {
+    const saved = toMoney(i.emergencyFund.saved);
+    const target = toMoney(i.emergencyFund.target);
+    if (saved.lessThan(target)) {
+      out.push({
+        key: "emergency-fund-below-target",
+        severity: "warning",
+        message:
+          i.emergencyFund.monthsCovered && i.emergencyFund.targetMonths
+            ? `Your emergency fund covers ${i.emergencyFund.monthsCovered} of ${i.emergencyFund.targetMonths} target months.`
+            : `Your emergency fund is ${i.formatMoney(toMoneyString(target.minus(saved)))} below its target.`,
+        basis: "Emergency fund",
       });
     }
   }

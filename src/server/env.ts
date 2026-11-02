@@ -15,6 +15,8 @@ const schema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional().default(""),
   NEXT_PUBLIC_SITE_URL: z.string().optional().default("http://localhost:3000"),
   DEV_AUTH_EMAIL: z.string().optional().default(""),
+  /** Shared secret Vercel Cron sends as a Bearer token to /api/cron/*. */
+  CRON_SECRET: z.string().optional().default(""),
 });
 
 const parsed = schema.safeParse(process.env);

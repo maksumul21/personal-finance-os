@@ -28,6 +28,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { InsightSeverity } from "@/domain/insights";
 import { formatMoney, type NumberFormatPref } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { StatusLabel } from "@/features/bills/components/bill-status";
 import { useComposer } from "@/features/transactions/components/composer";
 import { TransactionRow } from "@/features/transactions/components/transaction-row";
 import type { DashboardDTO } from "@/server/queries/dashboard.query";
@@ -390,8 +391,36 @@ export function DashboardView({
             </ul>
           )}
         </SectionCard>
-        <div className="lg:col-span-2">
+        <div className="space-y-6 lg:col-span-2">
           <Insights data={data} />
+          <SectionCard
+            title="Upcoming bills"
+            description={data.upcomingBills.items.length ? "Overdue and due in the next 30 days" : undefined}
+            actions={
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/bills">View all</Link>
+              </Button>
+            }
+          >
+            {data.upcomingBills.items.length === 0 ? (
+              <p className="px-5 py-6 text-sm text-muted-foreground">Nothing due in the next 30 days.</p>
+            ) : (
+              <ul className="divide-y">
+                {data.upcomingBills.items.map((b) => (
+                  <li key={b.id} className="flex items-center gap-3 px-5 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{b.name}</p>
+                      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {new Date(`${b.dueDate}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        <StatusLabel status={b.status} />
+                      </p>
+                    </div>
+                    <span className="tabular text-sm font-semibold">{formatMoney(b.amount, b.currency, { pref, compactDecimals: true })}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
         </div>
       </div>
     </div>
