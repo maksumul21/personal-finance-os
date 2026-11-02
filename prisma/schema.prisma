@@ -1,0 +1,232 @@
+// Personal Finance OS — database schema.
+// Money: Decimal(19,4). Exchange rates: Decimal(18,8). Calendar days: @db.Date.
+// See docs/ARCHITECTURE.md for the ledger model and sign convention.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────────── Enums ─────────────────────────────
+
+enum AccountType {
+  CASH
+  BANK
+  SAVINGS
+  MFS
+  CREDIT_CARD
+  LOAN
+  INVESTMENT
+  OTHER_ASSET
+}
+
+enum MfsProvider {
+  BKASH
+  NAGAD
+  ROCKET
+  OTHER
+}
+
+enum CategoryKind {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum TransactionSource {
+  MANUAL
+  RECURRING
+  BILL
+  DEBT
+  GOAL
+  IMPORT
+}
+
+enum NumberFormat {
+  LAKH
+  INTL
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum DashboardPeriod {
+  THIS_MONTH
+  LAST_MONTH
+  LAST_3_MONTHS
+  LAST_6_MONTHS
+  THIS_YEAR
+}
+
+// ───────────────────────────── Users ─────────────────────────────
+
+/// id equals the Supabase auth.users id.
+model User {
+  id           String   @id @db.Uuid
+  email        String   @unique
+  name         String?
+  avatarUrl    String?
+  baseCurrency String   @default("BDT") @db.Char(3)
+  timezone     String   @default("Asia/Dhaka")
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  settings     UserSettings?
+  accounts     Account[]
+  categories   Category[]
+  transactions Transaction[]
+  ledger       LedgerEntry[]
+  auditLogs    AuditLog[]
+}
+
+model UserSettings {
+  userId            String          @id @db.Uuid
+  dateFormat        String          @default("dd MMM yyyy")
+  numberFormat      NumberFormat    @default(LAKH)
+  weekStartsOn      Int             @default(6) @db.SmallInt // 0 = Sunday … 6 = Saturday
+  dashboardPeriod   DashboardPeriod @default(THIS_MONTH)
+  theme             ThemePreference @default(SYSTEM)
+  budgetWarnPct     Int             @default(70) @db.SmallInt
+  budgetCriticalPct Int             @default(90) @db.SmallInt
+  createdAt         DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────────────────── Accounts ─────────────────────────────
+
+model Account {
+  id                   String       @id @default(uuid()) @db.Uuid
+  userId               String       @db.Uuid
+  name                 String
+  type                 AccountType
+  provider             MfsProvider?
+  currency             String       @db.Char(3)
+  /// Signed, same convention as ledger entries (liabilities are negative).
+  openingBalance       Decimal      @default(0) @db.Decimal(19, 4)
+  openingDate          DateTime     @db.Date
+  creditLimit          Decimal?     @db.Decimal(19, 4)
+  color                String       @default("#4f46e5")
+  icon                 String       @default("wallet")
+  description          String?
+  includeInSafeToSpend Boolean      @default(true)
+  isArchived           Boolean      @default(false)
+  sortOrder            Int          @default(0)
+  createdAt            DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime     @updatedAt @db.Timestamptz(3)
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries LedgerEntry[]
+
+  @@unique([userId, name])
+  @@index([userId, isArchived])
+}
+
+// ───────────────────────────── Categories ─────────────────────────────
+
+model Category {
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @db.Uuid
+  name        String
+  kind        CategoryKind
+  parentId    String?      @db.Uuid
+  icon        String       @default("tag")
+  color       String       @default("#64748b")
+  isDefault   Boolean      @default(false)
+  isEssential Boolean      @default(false)
+  isArchived  Boolean      @default(false)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Category?     @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children     Category[]    @relation("CategoryTree")
+  transactions Transaction[]
+
+  @@index([userId, kind, isArchived])
+  @@index([parentId])
+}
+
+// ───────────────────────────── Ledger ─────────────────────────────
+
+model Transaction {
+  id              String            @id @default(uuid()) @db.Uuid
+  userId          String            @db.Uuid
+  type            TransactionType
+  date            DateTime          @db.Date
+  /// Positive amount in the source account's currency.
+  amount          Decimal           @db.Decimal(19, 4)
+  currency        String            @db.Char(3)
+  exchangeRate    Decimal           @default(1) @db.Decimal(18, 8)
+  baseAmount      Decimal           @db.Decimal(19, 4)
+  categoryId      String?           @db.Uuid
+  description     String?
+  notes           String?
+  isRefund        Boolean           @default(false)
+  source          TransactionSource @default(MANUAL)
+  recurringRuleId String?           @db.Uuid
+  occurrenceDate  DateTime?         @db.Date
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category?     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  entries  LedgerEntry[]
+
+  @@unique([recurringRuleId, occurrenceDate])
+  @@index([userId, date(sort: Desc)])
+  @@index([userId, type, date])
+  @@index([userId, categoryId, date])
+}
+
+model LedgerEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  transactionId String   @db.Uuid
+  userId        String   @db.Uuid
+  accountId     String   @db.Uuid
+  /// Denormalised from Transaction.date for balance-as-of queries.
+  date          DateTime @db.Date
+  /// Signed, in the account's currency.
+  amount        Decimal  @db.Decimal(19, 4)
+  /// Signed, in the user's base currency.
+  baseAmount    Decimal  @db.Decimal(19, 4)
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account     Account     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, date])
+  @@index([userId, date])
+  @@index([transactionId])
+}
+
+// ───────────────────────────── Audit ─────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
