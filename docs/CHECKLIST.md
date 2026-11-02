@@ -25,7 +25,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 15 | Debt & loan management | Tested | Loan terms, EMI split into principal transfer + interest expense, payment history/undo, payoff date, remaining interest, snowball/avalanche planner, credit-card utilisation. 10 unit + 5 integration tests; browser flow reconciled on the dashboard. Gaps: card rates/minimums not recorded (D-028); no EMI reminders on the calendar yet. |
 | 16 | Investment tracker | Tested | Holdings, buy/sell at average cost, recorded prices, market value, unrealised/realised gains, allocation, cash-funding check (D-029). 7 unit (incl. property) + 3 integration tests; browser: unfunded buy refused, buy → price → +20% gain → dashboard net worth reconciled; 375 px OK. Gaps: no automatic price feed (by design), no dividends shortcut (record as income). |
 | 17 | Net worth tracker | Tested | `/net-worth`: balance sheet (cash, investments, other assets / cards, loans, other liabilities), month-end history with table view, change vs last month-end and 12 months ago; manual assets/liabilities with dated valuations (D-030). Dashboard KPI and trend use the same module. 3 unit + 3 integration tests; browser add → reconcile → delete; 375 px OK. |
-| 18 | Financial calendar | Partial | Bill calendar on the Bills page only. |
+| 18 | Financial calendar | Tested | `/calendar`: month grid (week start from settings), bills (paid/overdue/due/projected beyond horizon), recurring projections, EMIs (paid + due until payoff), goal target dates, daily spending; month totals; day agenda (D-031). 3 unit + 3 integration tests; browser render, day select, month navigation, 375 px OK. |
 | 19 | Reports & analytics | Not started | Dashboard charts only; no reports page or export. |
 | 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
 | 21 | Safe-to-spend | Not started | `includeInSafeToSpend` flag on accounts only. |
@@ -138,5 +138,9 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 
 ## Phase 5 — Planning and insight
 
-- [ ] Financial calendar — **next**
+- [x] Financial calendar
+  - [x] `domain/calendar.ts` (grid, EMI dates, totals) + `queries/calendar.query.ts`; no schema change (D-031)
+  - [x] `/calendar` page + nav; phone layout keeps the grid in view
+  - [x] 3 unit + 3 integration tests; browser check
+- [ ] Safe-to-spend — **next** (formula to confirm against the original PRD)
 - [ ] Remaining Phase 5–6 modules: see ROADMAP.md

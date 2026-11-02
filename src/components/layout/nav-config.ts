@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/debts", label: "Debt Management", icon: CreditCard, available: true },
   { href: "/investments", label: "Investments", icon: TrendingUp, available: true },
   { href: "/net-worth", label: "Net Worth", icon: Scale, available: true },
-  { href: "/calendar", label: "Financial Calendar", icon: CalendarDays, available: false },
+  { href: "/calendar", label: "Financial Calendar", icon: CalendarDays, available: true },
   { href: "/reports", label: "Reports & Analytics", icon: BarChart3, available: false },
 ];
 

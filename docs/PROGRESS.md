@@ -12,11 +12,11 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
 | 4 — Debt, investments, net worth | Done and tested |
-| 5 — Planning tools and reports | **Next: Financial calendar** |
+| 5 — Planning tools and reports | In progress: calendar done; **Safe-to-spend next** |
 | 6 — Import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 14 tested, 7 logic-tested, 4 partial, 5 not started (see CHECKLIST.md).
-134 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 15 tested, 7 logic-tested, 3 partial, 5 not started (see CHECKLIST.md).
+140 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -25,6 +25,17 @@ Of the 30 PRD modules: 14 tested, 7 logic-tested, 4 partial, 5 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-02 — Financial calendar (Phase 5, module 1)
+
+- `domain/calendar.ts`, `queries/calendar.query.ts`, `/calendar` page; no schema change (D-031).
+- Tests: 3 unit + 3 integration; 140 total pass. Browser: renders with real data (৳215 spent today),
+  day selection, month navigation, 375 px OK.
+- **Correction:** `DEV_AUTH_EMAIL` in `.env` is empty, so the dev auth bypass is off and the app runs on
+  real Supabase sign-in (pages load through the browser's Supabase session). Earlier notes saying
+  live sign-in couldn't be exercised because of the bypass were wrong. An intermittent redirect to
+  sign-in was observed; logged in ROADMAP technical debt.
+- Not committed (awaiting approval).
 
 ### 2026-11-02 — Net worth tracker (Phase 4, module 3)
 
@@ -85,6 +96,9 @@ Of the 30 PRD modules: 14 tested, 7 logic-tested, 4 partial, 5 not started (see 
   usage; sequential queries inside DB transactions; `NODE_ENV` defaults to `production`.
 
 ## Environment notes
+
+- Auth: `.env` has `DEV_AUTH_EMAIL` empty, so local runs use real Supabase auth. Requests without
+  a session cookie (e.g. curl) are redirected to `/login`.
 
 - The embedded `prisma dev` database (D-008) breaks when integration tests run while
   `next dev` is serving (`08P01 bind message…`, `Connection terminated`). Restart `next dev`

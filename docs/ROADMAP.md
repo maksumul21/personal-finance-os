@@ -13,8 +13,8 @@ with integration tests, UI, browser check — before the next starts. Status of 
 
 ## Now: Phase 5 — Planning and insight
 
-4. **Financial calendar** (next) — bills, recurring, goal target dates, loan EMIs in one view.
-5. **Safe-to-spend** — balances of `includeInSafeToSpend` accounts − upcoming bills/recurring
+4. ~~Financial calendar~~ — done 2026-11-02 (D-031). Was: bills, recurring, goal target dates, loan EMIs in one view.
+5. **Safe-to-spend** (next) — balances of `includeInSafeToSpend` accounts − upcoming bills/recurring
    expenses before next income − goal commitments. Formula to confirm against the original PRD.
 6. **Cash-flow forecasting** — project balances from recurring rules, bills and EMIs.
 7. **Reports & analytics** — period reports, category trends, expense-to-income (§14.2), export.
@@ -41,3 +41,4 @@ with integration tests, UI, browser check — before the next starts. Status of 
 | Low | Local `prisma dev` DB breaks when integration tests run while `next dev` is up; restart the dev server after tests. |
 | Low | No Content-Security-Policy header. |
 | Low | Settings selects render empty until hydration. |
+| Medium | Intermittent redirect to sign-in while signed in (seen with two tabs open): likely Supabase refresh-token rotation racing between concurrent requests in `proxy.ts`. Reproduce against live Supabase before changing anything. |
