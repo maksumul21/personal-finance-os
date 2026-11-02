@@ -1,5 +1,6 @@
 import "server-only";
 import { accountBalance, accountNature, accountTotals, type AccountNature, type AccountType } from "@/domain/accounts";
+import { pickRate, toBase } from "@/domain/fx";
 import { toMoneyString } from "@/domain/money";
 import { dbToDay, type Day } from "@/domain/period";
 import { db } from "../db";
@@ -21,6 +22,8 @@ export interface AccountDTO {
   openingBalance: string;
   /** Signed, account currency. Liabilities are negative when money is owed. */
   balance: string;
+  /** Signed, base currency using the latest recorded rate; null when no rate exists. */
+  baseBalance: string | null;
   creditLimit: string | null;
   transactionCount: number;
 }
@@ -37,10 +40,10 @@ export interface AccountsOverview {
 
 /**
  * Every account with its derived balance (opening + Σ ledger entries), aggregated in SQL.
- * Foreign-currency balances are reported as unconverted until exchange rates exist (Phase 2).
+ * Foreign-currency balances convert at the latest recorded rate; without one they stay unconverted.
  */
 export async function getAccountsOverview(userId: string, baseCurrency: string): Promise<AccountsOverview> {
-  const [accounts, sums] = await Promise.all([
+  const [accounts, sums, rates] = await Promise.all([
     db.account.findMany({
       where: { userId },
       orderBy: [{ isArchived: "asc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
@@ -51,12 +54,15 @@ export async function getAccountsOverview(userId: string, baseCurrency: string):
       _sum: { amount: true },
       _count: { _all: true },
     }),
+    db.exchangeRate.findMany({ where: { userId }, select: { currency: true, date: true, rate: true } }),
   ]);
+  const recorded = rates.map((r) => ({ currency: r.currency, date: dbToDay(r.date), rate: r.rate }));
   const byAccount = new Map(sums.map((s) => [s.accountId, s]));
 
   const dtos: AccountDTO[] = accounts.map((a) => {
     const agg = byAccount.get(a.id);
     const balance = accountBalance(a.openingBalance, agg?._sum.amount ? [agg._sum.amount] : []);
+    const baseBalance = toBase(balance, a.currency, baseCurrency, pickRate(recorded, a.currency, "9999-12-31"));
     return {
       id: a.id,
       name: a.name,
@@ -72,6 +78,7 @@ export async function getAccountsOverview(userId: string, baseCurrency: string):
       openingDate: dbToDay(a.openingDate),
       openingBalance: toMoneyString(a.openingBalance),
       balance: toMoneyString(balance),
+      baseBalance: baseBalance ? toMoneyString(baseBalance) : null,
       creditLimit: a.creditLimit ? toMoneyString(a.creditLimit) : null,
       transactionCount: agg?._count._all ?? 0,
     };
@@ -81,7 +88,7 @@ export async function getAccountsOverview(userId: string, baseCurrency: string):
     dtos.map((a) => ({
       type: a.type,
       isArchived: a.isArchived,
-      baseBalance: a.currency === baseCurrency ? a.balance : null,
+      baseBalance: a.baseBalance,
     })),
   );
 
