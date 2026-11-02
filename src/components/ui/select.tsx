@@ -6,9 +6,18 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
 function Select({
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+  // Radix can emit onValueChange("") while mounting or when its hidden native <select> is reset.
+  // No option in this app has an empty value, so ignore it rather than clearing the selection.
+  const handleChange = React.useCallback(
+    (value: string) => {
+      if (value !== "") onValueChange?.(value)
+    },
+    [onValueChange]
+  )
+  return <SelectPrimitive.Root data-slot="select" onValueChange={handleChange} {...props} />
 }
 
 function SelectGroup({

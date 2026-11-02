@@ -1,6 +1,7 @@
 "use client";
 
-import { Archive, ArchiveRestore, MoreHorizontal, Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, List, MoreHorizontal, Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { FinanceIcon } from "@/components/finance/finance-icon";
@@ -25,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { NumberFormatPref } from "@/lib/format";
+import { formatMoney, type NumberFormatPref } from "@/lib/format";
 import type { AccountDTO, AccountsOverview } from "@/server/queries/accounts.query";
 import { archiveAccountAction, deleteAccountAction } from "../actions";
 import { ACCOUNT_TYPE_LABELS, PROVIDER_LABELS } from "../labels";
@@ -56,11 +57,13 @@ function toFormDefaults(a: AccountDTO): AccountFormDefaults {
 function AccountRow({
   account,
   pref,
+  baseCurrency,
   onEdit,
   onDelete,
 }: {
   account: AccountDTO;
   pref: NumberFormatPref;
+  baseCurrency: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -105,7 +108,14 @@ function AccountRow({
             <p className="text-xs text-muted-foreground">{owed ? "owed" : "in credit"}</p>
           </>
         ) : (
-          <Money value={account.balance} currency={account.currency} pref={pref} tone="auto" className="text-sm font-semibold" />
+          <>
+            <Money value={account.balance} currency={account.currency} pref={pref} tone="auto" className="text-sm font-semibold" />
+            {account.currency !== baseCurrency && (
+              <p className="tabular text-xs text-muted-foreground">
+                {account.baseBalance === null ? "no rate recorded" : `≈ ${formatMoney(account.baseBalance, baseCurrency, { pref })}`}
+              </p>
+            )}
+          </>
         )}
       </div>
       <DropdownMenu>
@@ -115,6 +125,11 @@ function AccountRow({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/transactions?account=${account.id}`}>
+              <List /> View transactions
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={onEdit}>
             <Pencil /> Edit
           </DropdownMenuItem>
@@ -176,7 +191,7 @@ export function AccountsView({
   const renderList = (list: AccountDTO[]) => (
     <ul className="divide-y">
       {list.map((a) => (
-        <AccountRow key={a.id} account={a} pref={pref} onEdit={() => openEdit(a)} onDelete={() => setToDelete(a)} />
+        <AccountRow key={a.id} account={a} pref={pref} baseCurrency={overview.baseCurrency} onEdit={() => openEdit(a)} onDelete={() => setToDelete(a)} />
       ))}
     </ul>
   );
@@ -209,7 +224,10 @@ export function AccountsView({
       {overview.totals.unconvertedCount > 0 && (
         <p className="mb-6 rounded-lg bg-warning-soft px-4 py-2.5 text-sm">
           {overview.totals.unconvertedCount} account{overview.totals.unconvertedCount > 1 ? "s are" : " is"} in another currency
-          and not included in the totals. Exchange-rate support arrives with transactions.
+          with no recorded exchange rate, so not included in the totals.{" "}
+          <Link href="/settings" className="font-medium underline">
+            Add a rate in Settings
+          </Link>
         </p>
       )}
 

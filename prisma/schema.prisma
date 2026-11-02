@@ -321,7 +321,9 @@ model BudgetAllocation {
   sortOrder       Int            @default(0)
 
   budget   Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  /// Cascade: the service refuses to delete a category a budget uses, so this only fires when the
+  /// whole user is deleted.
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([budgetId, categoryId])
   @@index([categoryId])

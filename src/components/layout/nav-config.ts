@@ -25,8 +25,8 @@ export interface NavItem {
 /** PRD §3 main navigation, in order. Flip `available` as each module lands. */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, available: true },
-  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, available: false },
-  { href: "/budgets", label: "Budgets", icon: WalletCards, available: false },
+  { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, available: true },
+  { href: "/budgets", label: "Budgets", icon: WalletCards, available: true },
   { href: "/accounts", label: "Accounts", icon: Wallet, available: true },
   { href: "/goals", label: "Savings Goals", icon: PiggyBank, available: false },
   { href: "/bills", label: "Bills & Subscriptions", icon: Receipt, available: false },
@@ -39,8 +39,12 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: Settings, available: true };
 
-/** Mobile bottom bar: the most frequently used sections. "More" opens the full drawer. */
-export const MOBILE_PRIMARY = ["/dashboard", "/transactions", "/budgets", "/accounts"];
+/**
+ * Mobile bottom bar: two sections, the add button in the middle, one more section, then "More"
+ * (the full drawer).
+ */
+export const MOBILE_LEFT = ["/dashboard", "/transactions"];
+export const MOBILE_RIGHT = ["/budgets"];
 
 export function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);

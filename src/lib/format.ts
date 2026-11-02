@@ -62,3 +62,13 @@ export function formatPercent(value: string | null, fractionDigits = 1): string 
   const n = formatter("INTL", fractionDigits).format(value as unknown as number);
   return `${n}%`;
 }
+
+/**
+ * Short axis labels only ("৳1.2L", "৳45K"). Chart axes need numbers; exact values are always
+ * shown from the decimal strings in tooltips and tables.
+ */
+export function formatAxisMoney(value: number, currency: string, pref: NumberFormatPref = "LAKH"): string {
+  const f = new Intl.NumberFormat(pref === "LAKH" ? "en-IN" : "en-US", { notation: "compact", maximumFractionDigits: 1 });
+  const sign = value < 0 ? "−" : "";
+  return `${sign}${currencySymbol(currency).trim()}${f.format(Math.abs(value))}`;
+}

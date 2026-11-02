@@ -28,12 +28,17 @@
 
 ## Phase 2 — Core Finance
 
-- [ ] Exchange rates (record + convert for consolidated totals)
-- [ ] Income / expense / transfer services (replace `tests/integration/helpers.ts › postTransaction`)
-- [ ] Transaction history (filters, search, sort, pagination, grouping)
-- [ ] Credit-card flows (purchase, repayment)
-- [ ] Dashboard KPIs + charts
-- [ ] Budgets (monthly, category, budget-vs-actual, zero-based, templates, rollover)
+- [x] Exchange rates: recorded per currency/date, latest-on-or-before rule, foreign balances converted, never guessed
+- [x] Income / expense / transfer service (create, edit re-posts atomically, delete), tags, refunds
+- [x] Credit-card flows: purchase = expense on the card, repayment = transfer (hint shown in the form)
+- [x] Transaction history: filters (type, account, category incl. subcategories, period, custom dates, search), sort, pagination, day grouping, summary
+- [x] Shared add/edit/duplicate composer; mobile "+" button in the bottom nav
+- [x] Dashboard: 6 KPIs with same-days comparison, trend charts (income vs expenses, cash flow, savings, net worth) with table view, expense donut, budget utilization, recent transactions, rule-based insights (dismissible)
+- [x] Budgets: weekly / monthly / annual / custom, category limits (group includes subcategories), planning lines, budget vs actual, last-period comparison, zero-based check, 50/30/20 and 70/20/10 targets, rollover, copy from previous budget
+- [x] Tests: 74 passing (unit, property-based, integration incl. PRD §26 scenarios, credit card, multi-currency, budgets, dashboard, isolation)
+- [x] Production build passes; all pages server-render without errors
+- [x] Browser click-through: income, card repayment transfer, filters
+- [ ] Browser click-through of dashboard charts and budget pages (app window was hidden)
 
 ## Phase 3–5
 

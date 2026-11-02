@@ -98,3 +98,51 @@ export function daysInPeriod(period: Period): number {
 export function addDaysTo(day: Day, days: number): Day {
   return toDay(addDays(local(day), days));
 }
+
+/** Last day of the month containing `day`. */
+export function endOfMonthDay(day: Day): Day {
+  return toDay(endOfMonth(local(day)));
+}
+
+/** The `count` months ending with the month of `day`, oldest first, as "yyyy-MM". */
+export function monthsEnding(day: Day, count: number): string[] {
+  const start = startOfMonth(local(day));
+  return Array.from({ length: count }, (_, i) => format(addMonths(start, i - count + 1), "yyyy-MM"));
+}
+
+/**
+ * A fair comparison for a period that may still be running: the elapsed part of `period`
+ * (capped at today) and the same number of days at the start of the preceding period.
+ * "1–2 Nov" compares with "1–2 Oct", not with all of October.
+ */
+export function comparablePeriods(period: Period, today: Day): { current: Period; previous: Period } {
+  const end = period.end < today ? period.end : today < period.start ? period.start : today;
+  const elapsed = differenceInCalendarDays(local(end), local(period.start));
+  const span = daysInPeriod(period);
+  // Months: step back by the same number of calendar months; otherwise by the span in days.
+  const s = local(period.start);
+  const isMonthAligned = s.getDate() === 1 && toDay(endOfMonth(local(period.end))) === period.end;
+  let prevStart: Day;
+  if (isMonthAligned) {
+    const months = (local(period.end).getFullYear() - s.getFullYear()) * 12 + local(period.end).getMonth() - s.getMonth() + 1;
+    prevStart = toDay(addMonths(s, -months));
+  } else {
+    prevStart = addDaysTo(period.start, -span);
+  }
+  const prevPeriodEnd = addDaysTo(period.start, -1);
+  let prevEnd: Day;
+  if (end === period.end) {
+    // The whole period has elapsed: compare with the whole previous period.
+    prevEnd = prevPeriodEnd;
+  } else if (isMonthAligned) {
+    // Same calendar day, months back (10 Nov → 10 Oct; 31 Mar → 28 Feb).
+    const months = (local(period.end).getFullYear() - s.getFullYear()) * 12 + local(period.end).getMonth() - s.getMonth() + 1;
+    prevEnd = toDay(addMonths(local(end), -months));
+  } else {
+    prevEnd = addDaysTo(prevStart, elapsed);
+  }
+  return {
+    current: { start: period.start, end },
+    previous: { start: prevStart, end: prevEnd > prevPeriodEnd ? prevPeriodEnd : prevEnd },
+  };
+}

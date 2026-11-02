@@ -83,10 +83,13 @@ export async function deleteCategory(userId: string, id: string) {
   return db.$transaction(async (tx) => {
     const existing = await tx.category.findFirst({
       where: { id, userId },
-      include: { _count: { select: { children: true, transactions: true } } },
+      include: { _count: { select: { children: true, transactions: true, allocations: true } } },
     });
     if (!existing) throw new UserFacingError("Category not found.");
     if (existing._count.children > 0) throw new UserFacingError("Delete or move its subcategories first.");
+    if (existing._count.allocations > 0) {
+      throw new UserFacingError("A budget uses this category. Remove it from the budget or archive the category instead.");
+    }
     if (existing._count.transactions > 0) {
       throw new UserFacingError("This category has transactions. Archive it instead to keep your history.");
     }

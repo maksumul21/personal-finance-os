@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { LogOut, Menu, Monitor, Moon, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Sun } from "lucide-react";
+import { LogOut, Menu, Monitor, Moon, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Plus, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -22,9 +22,10 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { signOut } from "@/features/auth/actions";
 import { updateThemeAction } from "@/features/settings/actions";
+import { useComposer } from "@/features/transactions/components/composer";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
-import { COLLAPSE_COOKIE, MOBILE_PRIMARY, NAV_ITEMS, SETTINGS_ITEM, isActive, type NavItem } from "./nav-config";
+import { COLLAPSE_COOKIE, MOBILE_LEFT, MOBILE_RIGHT, NAV_ITEMS, SETTINGS_ITEM, isActive, type NavItem } from "./nav-config";
 
 export interface ShellUser {
   name: string | null;
@@ -212,7 +213,30 @@ export function AppShell({
     document.cookie = `${COLLAPSE_COOKIE}=${next ? "1" : "0"}; path=/; max-age=31536000; samesite=lax`;
   };
 
-  const mobileItems = MOBILE_PRIMARY.map((href) => NAV_ITEMS.find((i) => i.href === href)!);
+  const composer = useComposer();
+  const navItem = (href: string) => NAV_ITEMS.find((i) => i.href === href)!;
+
+  const bottomLink = (item: NavItem) => {
+    const Icon = item.icon;
+    const active = isActive(pathname, item.href);
+    const cls = cn(
+      "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
+      active ? "text-primary" : "text-muted-foreground",
+      !item.available && "opacity-45",
+    );
+    const label = item.label.split(" ")[0];
+    return item.available ? (
+      <Link key={item.href} href={item.href} className={cls} aria-current={active ? "page" : undefined}>
+        <Icon className="size-5" />
+        {label}
+      </Link>
+    ) : (
+      <span key={item.href} className={cls} aria-disabled title={`${item.label} — coming soon`}>
+        <Icon className="size-5" />
+        {label}
+      </span>
+    );
+  };
 
   return (
     <div className="flex min-h-dvh">
@@ -271,27 +295,17 @@ export function AppShell({
           aria-label="Quick"
           className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
         >
-          {mobileItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(pathname, item.href);
-            const cls = cn(
-              "flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium",
-              active ? "text-primary" : "text-muted-foreground",
-              !item.available && "opacity-45",
-            );
-            const label = item.label.split(" ")[0];
-            return item.available ? (
-              <Link key={item.href} href={item.href} className={cls} aria-current={active ? "page" : undefined}>
-                <Icon className="size-5" />
-                {label}
-              </Link>
-            ) : (
-              <span key={item.href} className={cls} aria-disabled title={`${item.label} — coming soon`}>
-                <Icon className="size-5" />
-                {label}
-              </span>
-            );
-          })}
+          {MOBILE_LEFT.map((href) => bottomLink(navItem(href)))}
+          <div className="flex h-16 items-center justify-center">
+            <button
+              onClick={() => composer.open()}
+              aria-label="Add transaction"
+              className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <Plus className="size-6" />
+            </button>
+          </div>
+          {MOBILE_RIGHT.map((href) => bottomLink(navItem(href)))}
           <button className="flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground" onClick={() => setDrawerOpen(true)}>
             <MoreHorizontal className="size-5" />
             More
