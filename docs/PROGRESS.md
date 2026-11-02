@@ -11,11 +11,12 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 1 — Foundation | Done and audited |
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
-| 4 — Debt, investments, net worth | In progress: debts and investments done; **Net worth tracker next** |
-| 5–6 — Planning tools, reports, import/export, SaaS readiness | Not started |
+| 4 — Debt, investments, net worth | Done and tested |
+| 5 — Planning tools and reports | **Next: Financial calendar** |
+| 6 — Import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 13 tested, 7 logic-tested, 5 partial, 5 not started (see CHECKLIST.md).
-128 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 14 tested, 7 logic-tested, 4 partial, 5 not started (see CHECKLIST.md).
+134 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -24,6 +25,15 @@ Of the 30 PRD modules: 13 tested, 7 logic-tested, 5 partial, 5 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-02 — Net worth tracker (Phase 4, module 3)
+
+- Migration `phase4_net_worth`: `ManualItem`, `ManualValuation` (CHECK, RLS).
+- `domain/net-worth.ts`, shared `queries/net-worth.query.ts` (month-end series, manual net,
+  balance sheet; the dashboard now uses it), `services/net-worth.service.ts`, `/net-worth` page.
+- Tests: 3 unit + 3 integration; 134 total pass. Browser: added a ৳10,00,000 asset, net worth on
+  the page and dashboard rose by exactly that; deleted it; 375 px OK (also /investments).
+- Phase 4 complete. Not committed (awaiting approval).
 
 ### 2026-11-02 — Investment tracker (Phase 4, module 2)
 

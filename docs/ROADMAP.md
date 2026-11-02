@@ -4,16 +4,16 @@ Ordered by dependency. Each module ships complete — domain logic with unit tes
 with integration tests, UI, browser check — before the next starts. Status of what's built is in
 `CHECKLIST.md`; the session log is in `PROGRESS.md`.
 
-## Now: Phase 4 — Debt, investments, net worth
+## Done: Phase 4 — Debt, investments, net worth
 
 1. ~~Debt & loan management~~ — done 2026-11-02 (D-026 – D-028).
 2. ~~Investment tracker~~ — done 2026-11-02 (D-029). Was: holdings (asset, units, cost), recorded prices, market value,
    gain/loss; INVESTMENT accounts switch from ledger value to market value (replaces D-022).
-3. **Net worth tracker** (next) — page with history; manual assets and liabilities; uses 1 and 2.
+3. ~~Net worth tracker~~ — done 2026-11-02 (D-030).
 
-## Phase 5 — Planning and insight
+## Now: Phase 5 — Planning and insight
 
-4. **Financial calendar** — bills, recurring, goal target dates, loan EMIs in one view.
+4. **Financial calendar** (next) — bills, recurring, goal target dates, loan EMIs in one view.
 5. **Safe-to-spend** — balances of `includeInSafeToSpend` accounts − upcoming bills/recurring
    expenses before next income − goal commitments. Formula to confirm against the original PRD.
 6. **Cash-flow forecasting** — project balances from recurring rules, bills and EMIs.

@@ -23,8 +23,8 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 13 | Recurring transactions | Logic-tested | Idempotent processor, pause/resume, auto-pause; base-currency accounts only. |
 | 14 | Bills & subscriptions | Logic-tested | One expense per payment, undo, skip, calendar. Fixed: paying from a different-currency account (D-023). |
 | 15 | Debt & loan management | Tested | Loan terms, EMI split into principal transfer + interest expense, payment history/undo, payoff date, remaining interest, snowball/avalanche planner, credit-card utilisation. 10 unit + 5 integration tests; browser flow reconciled on the dashboard. Gaps: card rates/minimums not recorded (D-028); no EMI reminders on the calendar yet. |
-| 16 | Investment tracker | Tested | Holdings, buy/sell at average cost, recorded prices, market value, unrealised/realised gains, allocation, cash-funding check (D-029). 7 unit (incl. property) + 3 integration tests; browser: unfunded buy refused, buy → price → +20% gain → dashboard net worth reconciled. Gaps: no automatic price feed (by design), no dividends shortcut (record as income), 375 px not re-checked (window hidden). |
-| 17 | Net worth tracker | Partial | Dashboard KPI + trend include investments at market value. No dedicated page or manual assets/liabilities yet. |
+| 16 | Investment tracker | Tested | Holdings, buy/sell at average cost, recorded prices, market value, unrealised/realised gains, allocation, cash-funding check (D-029). 7 unit (incl. property) + 3 integration tests; browser: unfunded buy refused, buy → price → +20% gain → dashboard net worth reconciled; 375 px OK. Gaps: no automatic price feed (by design), no dividends shortcut (record as income). |
+| 17 | Net worth tracker | Tested | `/net-worth`: balance sheet (cash, investments, other assets / cards, loans, other liabilities), month-end history with table view, change vs last month-end and 12 months ago; manual assets/liabilities with dated valuations (D-030). Dashboard KPI and trend use the same module. 3 unit + 3 integration tests; browser add → reconcile → delete; 375 px OK. |
 | 18 | Financial calendar | Partial | Bill calendar on the Bills page only. |
 | 19 | Reports & analytics | Not started | Dashboard charts only; no reports page or export. |
 | 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
@@ -114,7 +114,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 - [x] Fix: dashboard showed "No change" when the comparison period was empty
 - [x] Browser: every route renders; add/validate/delete expense reconciles on the dashboard; 375 / 768 px pass
 
-## Phase 4 — Debt, investments, net worth (in progress)
+## Phase 4 — Debt, investments, net worth
 
 - [x] Debt & loan management
   - [x] Domain: EMI, payment split, amortisation schedule, snowball/avalanche payoff (`domain/loans.ts`, 10 unit tests incl. property test)
@@ -129,8 +129,14 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
   - [x] Net worth KPI and trend use market value (D-029 replaces D-022); accounts page shows "worth"
   - [x] `/investments` page: KPIs, allocation, holdings with gains, trade history, stale/unpriced flags; nav enabled
   - [x] 3 integration tests; browser flow reconciled; test data removed
-- [ ] Net worth tracker page + manual assets/liabilities — **next**
+- [x] Net worth tracker
+  - [x] Migration `phase4_net_worth`: `ManualItem`, `ManualValuation`, CHECK, RLS
+  - [x] Shared `net-worth.query.ts` (series, manual net, balance sheet) replaces the dashboard's private trend (D-030)
+  - [x] Service: items with first valuation, value updates, archive, delete; kind/currency locked
+  - [x] `/net-worth` page + nav; dashboard caption updated
+  - [x] 3 unit + 3 integration tests; browser flow reconciled; 375 px OK on /net-worth and /investments
 
-## Phase 5 and later
+## Phase 5 — Planning and insight
 
-See ROADMAP.md.
+- [ ] Financial calendar — **next**
+- [ ] Remaining Phase 5–6 modules: see ROADMAP.md

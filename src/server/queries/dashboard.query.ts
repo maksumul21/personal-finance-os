@@ -1,8 +1,6 @@
 import "server-only";
 import { format, parseISO } from "date-fns";
 import type { Thresholds } from "@/domain/budget";
-import { pickRate, toBase } from "@/domain/fx";
-import { valuationAdjustment } from "@/domain/investments";
 import { buildInsights, type Insight } from "@/domain/insights";
 import { incomeExpenseTotals } from "@/domain/ledger";
 import { savings, savingsRate } from "@/domain/metrics";
@@ -11,7 +9,6 @@ import {
   addDaysTo,
   comparablePeriods,
   dayToDb,
-  dbToDay,
   endOfMonthDay,
   monthsEnding,
   type Day,
@@ -20,7 +17,7 @@ import {
 import { formatMoney, type NumberFormatPref } from "@/lib/format";
 import { db } from "../db";
 import { getAccountsOverview } from "./accounts.query";
-import { loadHoldings } from "./holdings.data";
+import { manualNetToday, netWorthSeries } from "./net-worth.query";
 import { getUpcomingBills, type OccurrenceDTO } from "./bills.query";
 import { getActiveBudget, type BudgetDetailDTO } from "./budgets.query";
 import { getGoals } from "./goals.query";
@@ -112,42 +109,6 @@ async function monthlyTotals(userId: string, from: Day, to: Day) {
   return map;
 }
 
-/**
- * Month-end net worth from active accounts (assets − liabilities), matching the net worth KPI.
- * Opening balances count from their opening date; foreign ones convert at the latest recorded
- * rate. Investment accounts add their realised and unrealised gains as of each month-end, using
- * the trades and prices recorded by then (D-029).
- */
-async function netWorthByMonth(userId: string, baseCurrency: string, months: string[]) {
-  const lastDay = endOfMonthDay(`${months.at(-1)}-01`);
-  const [accounts, entries, rates, holdings] = await Promise.all([
-    db.account.findMany({ where: { userId, isArchived: false }, select: { id: true, currency: true, openingBalance: true, openingDate: true } }),
-    db.$queryRaw<{ month: string; total: unknown }[]>`
-      SELECT to_char(date_trunc('month', e."date"), 'YYYY-MM') AS month, SUM(e."baseAmount") AS total
-      FROM "LedgerEntry" e JOIN "Account" a ON a."id" = e."accountId"
-      WHERE e."userId" = ${userId}::uuid AND NOT a."isArchived" AND e."date" <= ${dayToDb(lastDay)}::date
-      GROUP BY 1 ORDER BY 1`,
-    db.exchangeRate.findMany({ where: { userId }, select: { currency: true, date: true, rate: true } }),
-    loadHoldings(userId),
-  ]);
-  const recorded = rates.map((r) => ({ currency: r.currency, date: dbToDay(r.date), rate: r.rate }));
-
-  return months.map((m) => {
-    const end = endOfMonthDay(`${m}-01`);
-    let total = ZERO;
-    for (const a of accounts) {
-      if (dbToDay(a.openingDate) > end) continue;
-      const rate = pickRate(recorded, a.currency, "9999-12-31");
-      const opening = toMoney(a.openingBalance).plus(valuationAdjustment(holdings.get(a.id) ?? [], end));
-      const base = toBase(opening, a.currency, baseCurrency, rate);
-      if (base === null) return null; // can't value this month honestly
-      total = total.plus(base);
-    }
-    for (const e of entries) if (e.month <= m) total = total.plus(toMoney(String(e.total)));
-    return total;
-  });
-}
-
 /** Expense spending per top-level group in the period. */
 async function breakdown(userId: string, p: Period): Promise<BreakdownSlice[]> {
   const [rows, categories] = await Promise.all([
@@ -209,17 +170,18 @@ export async function getDashboard(opts: {
   const trendFrom = `${months[0]}-01`;
   const trendTo = endOfMonthDay(`${months.at(-1)}-01`);
 
-  const [accounts, now, prev, monthly, netWorth, slices, budget, recent, bills, goals] = await Promise.all([
+  const [accounts, now, prev, monthly, netWorth, slices, budget, recent, bills, goals, manual] = await Promise.all([
     getAccountsOverview(userId, baseCurrency),
     totalsIn(userId, period),
     totalsIn(userId, previous),
     monthlyTotals(userId, trendFrom, trendTo),
-    netWorthByMonth(userId, baseCurrency, months),
+    netWorthSeries(userId, baseCurrency, months),
     breakdown(userId, period),
     getActiveBudget(userId, today, opts.thresholds),
     getRecentTransactions(userId, 8),
     getUpcomingBills(userId, today, 30),
     getGoals(userId, today),
+    manualNetToday(userId, baseCurrency, today),
   ]);
   const weekAhead = addDaysTo(today, 7);
   const dueSoon = bills.items.filter((b) => b.status !== "OVERDUE" && b.dueDate <= weekAhead);
@@ -273,8 +235,9 @@ export async function getDashboard(opts: {
     kpis: {
       totalBalance: accounts.totals.totalBalance,
       liabilities: accounts.totals.totalLiabilities,
-      netWorth: accounts.totals.netWorth,
-      unconvertedCount: accounts.totals.unconvertedCount,
+      // Accounts (investments at market) + manual assets − manual liabilities (D-030).
+      netWorth: toMoneyString(toMoney(accounts.totals.netWorth).plus(manual.total)),
+      unconvertedCount: accounts.totals.unconvertedCount + manual.unconverted,
       income: toMoneyString(now.income),
       expenses: toMoneyString(now.expenses),
       savings: toMoneyString(savings(now.income, now.expenses)),

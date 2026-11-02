@@ -171,6 +171,8 @@ model User {
   holdings     Holding[]
   trades       HoldingTrade[]
   prices       HoldingPrice[]
+  manualItems  ManualItem[]
+  manualValues ManualValuation[]
 }
 
 model UserSettings {
@@ -667,5 +669,60 @@ model HoldingPrice {
   holding Holding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
 
   @@unique([holdingId, date])
+  @@index([userId])
+}
+
+enum ManualItemKind {
+  ASSET
+  LIABILITY
+}
+
+enum ManualItemCategory {
+  PROPERTY
+  VEHICLE
+  VALUABLES
+  RECEIVABLE
+  BUSINESS
+  RETIREMENT
+  PERSONAL_DEBT
+  TAX
+  OTHER
+}
+
+/// Something you own or owe that isn't an account (a flat, a car, gold, money lent or borrowed
+/// informally). Its value comes from dated valuations (DECISIONS.md D-030).
+model ManualItem {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @db.Uuid
+  name       String
+  kind       ManualItemKind
+  category   ManualItemCategory @default(OTHER)
+  currency   String             @db.Char(3)
+  notes      String?
+  isArchived Boolean            @default(false)
+  createdAt  DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @db.Timestamptz(3)
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  valuations ManualValuation[]
+
+  @@unique([userId, name])
+  @@index([userId, isArchived])
+}
+
+/// The item's value (asset) or amount owed (liability) from this date on, until the next one.
+model ManualValuation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  itemId    String   @db.Uuid
+  date      DateTime @db.Date
+  value     Decimal  @db.Decimal(19, 4)
+  note      String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item ManualItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, date])
   @@index([userId])
 }

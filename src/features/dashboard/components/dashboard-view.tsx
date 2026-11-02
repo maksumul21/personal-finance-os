@@ -259,7 +259,7 @@ export function DashboardView({
           icon={Scale}
           footer={
             <span className="text-muted-foreground">
-              {k.unconvertedCount > 0 ? `${k.unconvertedCount} account(s) need a rate` : "Accounts: assets − liabilities"}
+              {k.unconvertedCount > 0 ? `${k.unconvertedCount} account(s) need a rate` : "Accounts, investments and other assets − debts"}
             </span>
           }
         >
