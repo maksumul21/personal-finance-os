@@ -28,6 +28,23 @@ async function assertUniqueName(tx: DbTx, userId: string, values: CategoryFormVa
   if (clash) throw new UserFacingError("A category with this name already exists here.", "name");
 }
 
+/**
+ * Changing kind also changes the subcategories' kind, so neither the category nor any child may
+ * be in use: a transaction, recurring rule or bill would end up on a category of the wrong type.
+ */
+async function assertKindChangeable(tx: DbTx, userId: string, id: string) {
+  const inTree = { userId, OR: [{ categoryId: id }, { category: { parentId: id } }] };
+  const transactions = await tx.transaction.count({ where: inTree });
+  const rules = await tx.recurringRule.count({ where: inTree });
+  const bills = await tx.bill.count({ where: inTree });
+  if (transactions + rules + bills > 0) {
+    throw new UserFacingError(
+      "This category or one of its subcategories is in use, so it can't change between income and expense.",
+      "kind",
+    );
+  }
+}
+
 export async function createCategory(userId: string, values: CategoryFormValues) {
   return db.$transaction(async (tx) => {
     await validateParent(tx, userId, values);
@@ -41,11 +58,9 @@ export async function createCategory(userId: string, values: CategoryFormValues)
 
 export async function updateCategory(userId: string, id: string, values: CategoryFormValues) {
   return db.$transaction(async (tx) => {
-    const existing = await tx.category.findFirst({ where: { id, userId }, include: { _count: { select: { children: true, transactions: true } } } });
+    const existing = await tx.category.findFirst({ where: { id, userId }, include: { _count: { select: { children: true } } } });
     if (!existing) throw new UserFacingError("Category not found.");
-    if (existing.kind !== values.kind && existing._count.transactions > 0) {
-      throw new UserFacingError("A category with transactions can't change between income and expense.", "kind");
-    }
+    if (existing.kind !== values.kind) await assertKindChangeable(tx, userId, id);
     if (values.parentId && existing._count.children > 0) {
       throw new UserFacingError("A category with subcategories can't be moved under another category.", "parentId");
     }
@@ -87,10 +102,9 @@ export async function deleteCategory(userId: string, id: string) {
     });
     if (!existing) throw new UserFacingError("Category not found.");
     if (existing._count.children > 0) throw new UserFacingError("Delete or move its subcategories first.");
-    const [rules, bills] = await Promise.all([
-      tx.recurringRule.count({ where: { userId, categoryId: id } }),
-      tx.bill.count({ where: { userId, categoryId: id } }),
-    ]);
+    // Sequential: a transaction runs on one connection, which can't execute queries concurrently.
+    const rules = await tx.recurringRule.count({ where: { userId, categoryId: id } });
+    const bills = await tx.bill.count({ where: { userId, categoryId: id } });
     if (rules + bills > 0) {
       throw new UserFacingError("A recurring transaction or bill uses this category. Change or delete those first.");
     }

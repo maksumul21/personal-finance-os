@@ -77,10 +77,9 @@ export async function deleteAccount(userId: string, id: string) {
     if ((await tx.ledgerEntry.count({ where: { accountId: id, userId } })) > 0) {
       throw new UserFacingError("This account has transactions. Archive it instead to keep your history.");
     }
-    const [rules, bills] = await Promise.all([
-      tx.recurringRule.count({ where: { userId, OR: [{ accountId: id }, { toAccountId: id }] } }),
-      tx.bill.count({ where: { userId, paymentAccountId: id } }),
-    ]);
+    // Sequential: a transaction runs on one connection, which can't execute queries concurrently.
+    const rules = await tx.recurringRule.count({ where: { userId, OR: [{ accountId: id }, { toAccountId: id }] } });
+    const bills = await tx.bill.count({ where: { userId, paymentAccountId: id } });
     if (rules + bills > 0) {
       throw new UserFacingError("A recurring transaction or bill uses this account. Change or delete those first.");
     }

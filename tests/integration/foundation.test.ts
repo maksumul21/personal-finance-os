@@ -13,6 +13,7 @@ import {
   createCategory,
   deleteCategory,
   setCategoryArchived,
+  updateCategory,
 } from "@/server/services/categories.service";
 import { provisionUser } from "@/server/services/provisioning.service";
 import { updatePreferences } from "@/server/services/settings.service";
@@ -155,6 +156,25 @@ describe("categories", () => {
     const archived = await db.category.findMany({ where: { id: { in: [group.id, child.id] } } });
     expect(archived.every((c) => c.isArchived)).toBe(true);
     await expect(setCategoryArchived(userId, child.id, false)).rejects.toThrow(/Restore/);
+  });
+
+  it("won't change a group's kind while one of its subcategories has transactions", async () => {
+    const userId = await createTestUser();
+    const values = { name: "Hobbies", kind: "EXPENSE" as const, parentId: null, icon: "tag", color: "#64748b", isEssential: false };
+    const group = await createCategory(userId, values);
+    const child = await createCategory(userId, { ...values, name: "Books", parentId: group.id });
+    const account = await createAccount(userId, accountValues());
+    await postTransaction(userId, { type: "EXPENSE", accountId: account.id, amount: "400" }, { categoryId: child.id });
+
+    await expect(updateCategory(userId, group.id, { ...values, kind: "INCOME" })).rejects.toThrow(/in use/);
+    const kinds = await db.category.findMany({ where: { id: { in: [group.id, child.id] } }, select: { kind: true } });
+    expect(kinds.every((c) => c.kind === "EXPENSE")).toBe(true);
+
+    // An unused group can still switch, and its subcategories follow.
+    const spare = await createCategory(userId, { ...values, name: "Spare" });
+    const spareChild = await createCategory(userId, { ...values, name: "Bits", parentId: spare.id });
+    await updateCategory(userId, spare.id, { ...values, name: "Spare", kind: "INCOME" });
+    expect((await db.category.findUniqueOrThrow({ where: { id: spareChild.id } })).kind).toBe("INCOME");
   });
 });
 

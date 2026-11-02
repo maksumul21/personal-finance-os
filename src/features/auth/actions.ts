@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { authMode } from "@/server/auth";
 import { env } from "@/server/env";
@@ -14,10 +15,7 @@ const credentials = z.object({
 });
 
 /** Only allow same-origin relative redirects after login. */
-function safeNext(value: FormDataEntryValue | null): string {
-  const next = typeof value === "string" ? value : "";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
-}
+const safeNext = (value: FormDataEntryValue | null) => safeRedirectPath(value);
 
 function notConfigured(): AuthFormState {
   return { error: "Authentication is not configured. Add your Supabase keys to .env (see .env.example)." };

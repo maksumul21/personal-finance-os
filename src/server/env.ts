@@ -2,7 +2,8 @@ import "server-only";
 import { z } from "zod";
 
 const schema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  /** Defaults to production so a missing value can never enable the dev auth bypass (D-009). */
+  NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   NEXT_PUBLIC_SUPABASE_URL: z
     .string()
