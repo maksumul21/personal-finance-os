@@ -30,7 +30,10 @@ export async function signInWithPassword(_: AuthFormState, form: FormData): Prom
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-  // Deliberately generic: don't reveal whether the email exists.
+  if (error?.code === "email_not_confirmed") {
+    return { error: "Please confirm your email first. Check your inbox for the link." };
+  }
+  // Otherwise deliberately generic: don't reveal whether the email exists.
   if (error) return { error: "Incorrect email or password." };
   redirect(safeNext(form.get("next")));
 }

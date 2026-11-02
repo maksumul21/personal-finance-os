@@ -4,7 +4,14 @@ import { z } from "zod";
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().optional().default(""),
+  NEXT_PUBLIC_SUPABASE_URL: z
+    .string()
+    .optional()
+    .default("")
+    .refine(
+      (v) => v === "" || /^https?:\/\/[^/]+\/?$/.test(v),
+      "Use the Supabase Project URL only (https://<project>.supabase.co), without /rest/v1/ or any other path",
+    ),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional().default(""),
   NEXT_PUBLIC_SITE_URL: z.string().optional().default("http://localhost:3000"),
   DEV_AUTH_EMAIL: z.string().optional().default(""),

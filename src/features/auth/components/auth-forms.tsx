@@ -39,7 +39,12 @@ export function LoginForm({ next, linkError }: { next: string; linkError: boolea
       </CardHeader>
       <CardContent className="space-y-4">
         {linkError && !state && (
-          <FormStatus state={{ error: "That sign-in link is invalid or has expired. Request a new one." }} />
+          <FormStatus
+            state={{
+              error:
+                "That link couldn’t sign you in here. If you just confirmed your email, sign in with your password. Otherwise, request a new link.",
+            }}
+          />
         )}
         <FormStatus state={state} />
         <form action={mode === "password" ? passwordAction : magicAction} className="space-y-4">

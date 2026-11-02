@@ -14,7 +14,7 @@
 - [x] `domain/money` + unit tests
 - [x] `domain/ledger` + unit and property tests (PRD §26 scenarios)
 - [x] `domain/period` (timezone-aware periods) + tests
-- [x] Supabase Auth: login, signup, magic link, callback, logout, `proxy.ts` session refresh — **needs Supabase keys to test live**
+- [x] Supabase Auth: login, signup, magic link, callback + token-hash confirm, logout, `proxy.ts` session refresh — sign-up, email confirmation, password sign-in and first-login provisioning verified live
 - [x] `requireUser()` + first-login provisioning (settings, default categories, Cash account)
 - [x] Design tokens (light/dark), theme switcher, Money / KpiCard / EmptyState / FinanceIcon
 - [x] App shell: collapsible sidebar, mobile bottom nav + drawer, active state, user menu
