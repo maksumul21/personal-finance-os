@@ -26,6 +26,19 @@
 - [x] Click-through in the browser: account create / edit / archive / restore, validation, categories + subcategories, preferences save + validation
 - [x] Responsive pass at 375 / 768 / 1280: no horizontal overflow; tablet shows icon rail; drawer + bottom nav on mobile
 
+### Phase 1 audit (2026-11-02)
+
+- [x] All migrations applied; `prisma migrate diff` shows no drift between migrations and schema
+- [x] RLS enabled on all 17 tables
+- [x] Every server action goes through `defineAction` → `requireUser()`; updates/deletes filter by `{ id, userId }`
+- [x] Money never passes through `Number()`/`parseFloat` on the server (display-only uses in charts/percentages)
+- [x] Browser re-check: account create / validation / archive / delete, categories, settings, mobile 375 px
+- [x] Fix: post-login `next` redirect accepted `/\evil.com` (open redirect) → `safeRedirectPath()` + unit tests
+- [x] Fix: changing a group's income/expense kind ignored subcategory transactions, rules and bills → guard + integration test
+- [x] Fix: delete-guard counts ran concurrently inside a DB transaction → sequential
+- [x] Hardening: `NODE_ENV` defaults to `production`, so a missing value can't enable the dev auth bypass (D-009)
+- [x] 101 tests passing; typecheck, lint and production build clean
+
 ## Phase 2 — Core Finance
 
 - [x] Exchange rates: recorded per currency/date, latest-on-or-before rule, foreign balances converted, never guessed
@@ -40,6 +53,19 @@
 - [x] Browser click-through: income, card repayment transfer, filters
 - [ ] Browser click-through of dashboard charts and budget pages (app window was hidden)
 
-## Phase 3–5
+## Phase 3 — Planning
 
-See ARCHITECTURE.md.
+- [x] Recurrence engine shared by recurring rules and bills (anchored dates, no month-end drift)
+- [x] Savings goals: emergency fund (essentials × months), goals, sinking funds; contributions as transfers or earmarks; withdrawal caps; history
+- [x] Recurring transactions: idempotent processor (unique rule + date), pause/resume without backfill, auto-pause when an occurrence can't post
+- [x] Bills & subscriptions: materialised occurrences, pay (one expense per payment), undo, skip, calendar, monthly/annual subscription cost
+- [x] Guards: goal transfers and bill expenses can't be edited out of sync; accounts/categories used by schedules can't be deleted
+- [x] Daily maintenance on page load + `/api/cron/daily` (`CRON_SECRET`, Vercel Cron)
+- [x] Dashboard: upcoming bills card; insights for overdue / due-soon bills and the emergency fund
+- [x] Tests, lint, typecheck and production build pass
+- [ ] Browser click-through of goals, recurring and bills pages
+- [ ] Phase 3 audit (same scope as the Phase 1 audit)
+
+## Phase 4–5 (not started)
+
+Shown as "Soon" in the navigation: Debt Management, Investments, Net Worth, Financial Calendar, Reports & Analytics.
