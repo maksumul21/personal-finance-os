@@ -53,6 +53,10 @@ export async function updateAccount(userId: string, id: string, values: AccountF
         "type",
       );
     }
+    const loan = await tx.loanTerms.findUnique({ where: { accountId: id }, select: { id: true } });
+    if (loan && (values.type !== "LOAN" || values.currency !== existing.currency)) {
+      throw new UserFacingError("This account has loan details. Remove them in Debts before changing its type or currency.", "type");
+    }
     const updated = await tx.account.update({ where: { id: existing.id }, data: accountData(values) });
     await audit(tx, userId, "account.update", "Account", id, existing, updated);
     return { id };
@@ -80,8 +84,9 @@ export async function deleteAccount(userId: string, id: string) {
     // Sequential: a transaction runs on one connection, which can't execute queries concurrently.
     const rules = await tx.recurringRule.count({ where: { userId, OR: [{ accountId: id }, { toAccountId: id }] } });
     const bills = await tx.bill.count({ where: { userId, paymentAccountId: id } });
-    if (rules + bills > 0) {
-      throw new UserFacingError("A recurring transaction or bill uses this account. Change or delete those first.");
+    const loans = await tx.loanTerms.count({ where: { userId, paymentAccountId: id } });
+    if (rules + bills + loans > 0) {
+      throw new UserFacingError("A recurring transaction, bill or loan uses this account. Change or delete those first.");
     }
     await tx.account.delete({ where: { id: existing.id } });
     await audit(tx, userId, "account.delete", "Account", id, existing);

@@ -59,15 +59,19 @@ function useParamNav() {
   return { set, pending };
 }
 
-/** % change vs the comparison period, or null when there's nothing meaningful to compare. */
-function change(current: string, previous: string): number | null {
+/**
+ * % change vs the comparison period (display only). "none" when the comparison period had
+ * nothing, so a percentage would be meaningless.
+ */
+function change(current: string, previous: string): number | "none" {
   const p = Number(previous);
-  if (!(p > 0)) return null;
+  if (!(p > 0)) return Number(current) === 0 ? 0 : "none";
   return ((Number(current) - p) / p) * 100;
 }
 
-function Delta({ value, goodWhenUp, label }: { value: number | null; goodWhenUp: boolean; label: string }) {
-  if (value === null || Math.abs(value) < 0.5) return <span className="text-muted-foreground">No change vs {label}</span>;
+function Delta({ value, goodWhenUp, label }: { value: number | "none"; goodWhenUp: boolean; label: string }) {
+  if (value === "none") return <span className="text-muted-foreground">Nothing in {label} to compare</span>;
+  if (Math.abs(value) < 0.5) return <span className="text-muted-foreground">No change vs {label}</span>;
   const up = value > 0;
   const good = up === goodWhenUp;
   const Icon = up ? ArrowUpRight : ArrowDownRight;

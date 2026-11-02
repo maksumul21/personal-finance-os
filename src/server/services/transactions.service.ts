@@ -103,7 +103,7 @@ async function prepare(tx: DbTx, ctx: Ctx, values: TransactionFormValues, existi
 
 /** Where a transaction came from; recurring ones carry the idempotency key (rule, occurrence). */
 export interface PostOrigin {
-  source?: "MANUAL" | "RECURRING" | "BILL" | "GOAL";
+  source?: "MANUAL" | "RECURRING" | "BILL" | "GOAL" | "DEBT";
   recurringRuleId?: string;
   occurrenceDate?: string;
 }
@@ -203,11 +203,20 @@ export async function updateTransaction(ctx: Ctx, id: string, values: Transactio
   return db.$transaction(async (tx) => {
     const existing = await tx.transaction.findFirst({
       where: { id, userId: ctx.userId },
-      include: { entries: { select: { accountId: true } }, goalContribution: { select: { id: true } }, billOccurrence: { select: { id: true } } },
+      include: {
+        entries: { select: { accountId: true } },
+        goalContribution: { select: { id: true } },
+        billOccurrence: { select: { id: true } },
+        loanPrincipalOf: { select: { id: true } },
+        loanInterestOf: { select: { id: true } },
+      },
     });
     if (!existing) throw new UserFacingError("Transaction not found.");
     if (existing.goalContribution) {
       throw new UserFacingError("This transfer belongs to a savings goal contribution. Edit it from the goal.");
+    }
+    if (existing.loanPrincipalOf || existing.loanInterestOf) {
+      throw new UserFacingError("This is part of a loan payment. Delete and re-record the payment from Debts.");
     }
     if (existing.billOccurrence && values.type !== "EXPENSE") {
       throw new UserFacingError("This expense paid a bill, so it must stay an expense. Unmark the bill payment to change it.");
@@ -226,10 +235,18 @@ export async function deleteTransaction(ctx: Ctx, id: string) {
   return db.$transaction(async (tx) => {
     const linked = await tx.transaction.findFirst({
       where: { id, userId: ctx.userId },
-      select: { goalContribution: { select: { id: true } }, billOccurrence: { select: { id: true } } },
+      select: {
+        goalContribution: { select: { id: true } },
+        billOccurrence: { select: { id: true } },
+        loanPrincipalOf: { select: { id: true } },
+        loanInterestOf: { select: { id: true } },
+      },
     });
     if (linked?.goalContribution) {
       throw new UserFacingError("This transfer belongs to a savings goal contribution. Delete it from the goal.");
+    }
+    if (linked?.loanPrincipalOf || linked?.loanInterestOf) {
+      throw new UserFacingError("This is part of a loan payment. Delete the payment from Debts to remove both parts.");
     }
     // Deleting a bill payment puts the bill back to unpaid.
     if (linked?.billOccurrence) {

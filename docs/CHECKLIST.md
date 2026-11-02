@@ -1,5 +1,44 @@
 # Development Checklist
 
+## Feature status (full audit, 2026-11-02)
+
+Statuses: **Tested** = automated tests plus a browser check · **Logic-tested** = service and
+integration tests pass, but the UI flow wasn't clicked through in the audit · **Partial** ·
+**Not started** · **Blocked (external)**. Measured against the reconstructed `PRD.md`.
+
+| # | Module | Status | Evidence / gaps |
+|---|---|---|---|
+| 1 | Authentication & user management | Partial | Sign-up, confirm, password and magic-link sign-in, logout, first-login provisioning verified live (earlier session). Safe redirects tested. **Missing:** password reset, account deletion, Google OAuth (deferred, D-005). |
+| 2 | Dashboard | Tested | KPIs, comparisons, trends, donut, budget card, bills, insights. Browser: KPIs reconcile after add/delete. Fixed: net worth ignored investment accounts (D-022); "No change" shown when there was no baseline. |
+| 3 | Income management | Tested | Ledger/unit + integration; liability accounts refused. |
+| 4 | Expense management | Tested | Incl. refunds (D-007), card purchases. Browser add / validate / delete. |
+| 5 | Transaction management | Tested | Filters, search, sort, pagination, edit re-posts atomically, duplicate, delete, tags, audit log. |
+| 6 | Account management | Tested | CRUD, archive, presets, derived balances, liabilities. |
+| 7 | Account transfers | Tested | Same and cross-currency, card repayment, never income/expense. |
+| 8 | Budget management | Logic-tested | 7 integration + 12 unit tests. UI pages render; budget editing not clicked through. Perf: `listBudgets` recomputes every budget's detail (N+1). |
+| 9 | Zero-based budgeting | Logic-tested | Unit + integration. |
+| 10 | Savings goals | Logic-tested | Transfers vs earmarks, withdrawal caps, edits re-post. UI renders (empty state). |
+| 11 | Emergency fund | Logic-tested | Target = essentials × months; months covered; dashboard insight. |
+| 12 | Sinking funds | Logic-tested | Goal type SINKING_FUND. |
+| 13 | Recurring transactions | Logic-tested | Idempotent processor, pause/resume, auto-pause; base-currency accounts only. |
+| 14 | Bills & subscriptions | Logic-tested | One expense per payment, undo, skip, calendar. Fixed: paying from a different-currency account (D-023). |
+| 15 | Debt & loan management | Tested | Loan terms, EMI split into principal transfer + interest expense, payment history/undo, payoff date, remaining interest, snowball/avalanche planner, credit-card utilisation. 10 unit + 5 integration tests; browser flow reconciled on the dashboard. Gaps: card rates/minimums not recorded (D-028); no EMI reminders on the calendar yet. |
+| 16 | Investment tracker | Not started | INVESTMENT account type only; no holdings or prices. |
+| 17 | Net worth tracker | Partial | Dashboard KPI + trend (accounts only). No page, manual assets/liabilities or investment market value. |
+| 18 | Financial calendar | Partial | Bill calendar on the Bills page only. |
+| 19 | Reports & analytics | Not started | Dashboard charts only; no reports page or export. |
+| 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
+| 21 | Safe-to-spend | Not started | `includeInSafeToSpend` flag on accounts only. |
+| 22 | What-if calculator | Not started | — |
+| 23 | Cash-flow forecasting | Not started | Recurrence engine is ready to reuse. |
+| 24 | Financial health score | Not started | Expense-to-income ratio exists in `domain/metrics`. |
+| 25 | Settings & customisation | Tested | Profile, currency lock, timezone, formats, thresholds, theme, exchange rates. |
+| 26 | Data import & export | Not started | — |
+| 27 | Multi-currency | Partial | Per-account currency, recorded rates, conversions, cross-currency transfers. Recurring limited to base currency; foreign account opening balances use latest rate in the trend. |
+| 28 | Security & data isolation | Tested | `requireUser` everywhere, `{id,userId}` scoping, RLS on all tables, isolation tests, open redirect fixed, dev bypass hardened. Gaps: no CSP; no app-level rate limiting (Supabase limits auth). |
+| 29 | Responsive design | Tested | No horizontal overflow on any page at 375 / 768; bottom nav + drawer. |
+| 30 | SaaS readiness | Partial / Blocked (external) | Multi-tenant, cron. Missing: account deletion + data export, password reset, monitoring. **External:** production Supabase project + migrations, Supabase email templates for `/auth/confirm`, `CRON_SECRET` on Vercel. |
+
 ## Phase 0 — Setup
 
 - [x] Scaffold Next.js 16.4 + TypeScript strict + Tailwind v4 + shadcn/ui (Radix)
@@ -63,9 +102,29 @@
 - [x] Daily maintenance on page load + `/api/cron/daily` (`CRON_SECRET`, Vercel Cron)
 - [x] Dashboard: upcoming bills card; insights for overdue / due-soon bills and the emergency fund
 - [x] Tests, lint, typecheck and production build pass
-- [ ] Browser click-through of goals, recurring and bills pages
-- [ ] Phase 3 audit (same scope as the Phase 1 audit)
+- [x] Code audit (full project audit, 2026-11-02); fix: bill paid from another-currency account (D-023)
+- [ ] Browser click-through of goal, recurring and bill create/pay flows (pages render; flows covered by integration tests)
 
-## Phase 4–5 (not started)
+## Full project audit (2026-11-02)
 
-Shown as "Soon" in the navigation: Debt Management, Investments, Net Worth, Financial Calendar, Reports & Analytics.
+- [x] All 103 tests pass after fixes (113 with the loan domain tests); typecheck, lint, production build clean; migrations match schema
+- [x] Fix: net worth (KPI and trend) dropped money moved into investment accounts (D-022)
+- [x] Fix: net worth trend included archived accounts while the KPI didn't
+- [x] Fix: bill paid from a different-currency account posted the amount unconverted (D-023)
+- [x] Fix: dashboard showed "No change" when the comparison period was empty
+- [x] Browser: every route renders; add/validate/delete expense reconciles on the dashboard; 375 / 768 px pass
+
+## Phase 4 — Debt, investments, net worth (in progress)
+
+- [x] Debt & loan management
+  - [x] Domain: EMI, payment split, amortisation schedule, snowball/avalanche payoff (`domain/loans.ts`, 10 unit tests incl. property test)
+  - [x] Migration `phase4_loans`: `LoanTerms`, `LoanPayment`, CHECK constraints, RLS (D-026, D-027)
+  - [x] Services: terms, record/undo payment atomically; guards on transactions, accounts, categories
+  - [x] `/debts` page: KPIs, loan cards, payment history, payoff planner, credit cards; nav enabled
+  - [x] 5 integration tests (split, lender interest, undo, refusals, guards, isolation); browser: add terms → pay → dashboard reconciles → undo → cleanup; 375 px OK
+- [ ] Investment tracker — **next**
+- [ ] Net worth tracker page + manual assets/liabilities
+
+## Phase 5 and later
+
+See ROADMAP.md.

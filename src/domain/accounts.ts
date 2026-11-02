@@ -50,6 +50,11 @@ export interface AccountTotals {
   /** PRD §4.1 Total Balance: active asset accounts, excluding investment containers. */
   totalBalance: Money;
   totalLiabilities: Money;
+  /**
+   * Σ signed balances of every active account. Investment accounts count at their ledger
+   * balance (money put in) until holdings are valued at market in Phase 4 (DECISIONS.md D-022).
+   */
+  netWorth: Money;
   /** Active accounts whose balance could not be converted to the base currency. */
   unconvertedCount: number;
 }
@@ -57,6 +62,7 @@ export interface AccountTotals {
 export function accountTotals(rows: Iterable<AccountBalanceRow>): AccountTotals {
   let totalBalance = ZERO;
   let totalLiabilities = ZERO;
+  let netWorth = ZERO;
   let unconvertedCount = 0;
   for (const row of rows) {
     if (row.isArchived) continue;
@@ -64,6 +70,7 @@ export function accountTotals(rows: Iterable<AccountBalanceRow>): AccountTotals 
       unconvertedCount++;
       continue;
     }
+    netWorth = netWorth.plus(toMoney(row.baseBalance));
     if (accountNature(row.type) === "LIABILITY") {
       totalLiabilities = totalLiabilities.plus(liabilityOutstanding(row.baseBalance));
       // A card in credit (positive balance) is money you hold.
@@ -73,5 +80,5 @@ export function accountTotals(rows: Iterable<AccountBalanceRow>): AccountTotals 
       totalBalance = totalBalance.plus(toMoney(row.baseBalance));
     }
   }
-  return { totalBalance, totalLiabilities, unconvertedCount };
+  return { totalBalance, totalLiabilities, netWorth, unconvertedCount };
 }

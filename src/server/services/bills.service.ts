@@ -134,6 +134,15 @@ export async function payBill(ctx: Ctx, v: PayBillValues) {
 
     let transactionId: string | null = null;
     if (!v.alreadyRecorded) {
+      // The bill's amount is in its payment account's currency; paying from another currency
+      // would post that number unconverted.
+      if (v.accountId && v.accountId !== o.bill.paymentAccountId) {
+        const usual = await tx.account.findFirst({ where: { id: o.bill.paymentAccountId, userId: ctx.userId }, select: { currency: true } });
+        const chosen = await tx.account.findFirst({ where: { id: v.accountId, userId: ctx.userId }, select: { currency: true } });
+        if (chosen && usual && chosen.currency !== usual.currency) {
+          throw new UserFacingError(`Pay this bill from a ${usual.currency} account.`, "accountId");
+        }
+      }
       const posted = await postTransactionTx(
         tx,
         ctx,

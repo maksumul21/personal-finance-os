@@ -195,6 +195,26 @@ describe("bills", () => {
     expect((await db.billOccurrence.findUniqueOrThrow({ where: { id: occ[0].id } })).state).toBe("PENDING");
   });
 
+  it("won't pay a bill from an account in another currency (the amount would post unconverted)", async () => {
+    const s = await setup();
+    const usd = (await createAccount(s.userId, accountValues({ name: "USD Card", currency: "USD" }))).id;
+    const cash = (await createAccount(s.userId, accountValues({ name: "Wallet", type: "CASH" }))).id;
+    const { id } = await createBill(
+      s.ctx,
+      bill({ name: "Gym", amount: "3000", categoryId: await s.cat("Internet"), paymentAccountId: s.bank, unit: "ONCE", interval: 1, firstDueDate: "2026-11-10" }),
+      "2026-11-02",
+    );
+    const o = await db.billOccurrence.findFirstOrThrow({ where: { billId: id } });
+
+    await expect(payBill(s.ctx, { occurrenceId: o.id, date: "2026-11-09", accountId: usd, alreadyRecorded: false })).rejects.toThrow(/BDT account/);
+    expect(await db.transaction.count({ where: { userId: s.userId, source: "BILL" } })).toBe(0);
+    expect((await db.billOccurrence.findUniqueOrThrow({ where: { id: o.id } })).state).toBe("PENDING");
+
+    // Another account in the same currency is fine.
+    await payBill(s.ctx, { occurrenceId: o.id, date: "2026-11-09", accountId: cash, alreadyRecorded: false });
+    expect((await s.balances()).Wallet).toBe("-3000.00");
+  });
+
   it("deleting the bill's expense from Transactions puts the bill back to unpaid; it must stay an expense", async () => {
     const s = await setup();
     const water = await s.cat("Water");

@@ -34,6 +34,7 @@ export interface AccountsOverview {
   totals: {
     totalBalance: string;
     totalLiabilities: string;
+    netWorth: string;
     unconvertedCount: number;
   };
 }
@@ -98,6 +99,7 @@ export async function getAccountsOverview(userId: string, baseCurrency: string):
     totals: {
       totalBalance: toMoneyString(totals.totalBalance),
       totalLiabilities: toMoneyString(totals.totalLiabilities),
+      netWorth: toMoneyString(totals.netWorth),
       unconvertedCount: totals.unconvertedCount,
     },
   };

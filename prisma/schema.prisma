@@ -166,6 +166,8 @@ model User {
   goals        SavingsGoal[]
   recurring    RecurringRule[]
   bills        Bill[]
+  loans        LoanTerms[]
+  loanPayments LoanPayment[]
 }
 
 model UserSettings {
@@ -211,6 +213,8 @@ model Account {
   recurringFrom RecurringRule[] @relation("RecurringFrom")
   recurringTo   RecurringRule[] @relation("RecurringTo")
   bills         Bill[]
+  loanTerms     LoanTerms?      @relation("LoanAccount")
+  loansPaidFrom LoanTerms[]     @relation("LoanPaymentAccount")
 
   @@unique([userId, name])
   @@index([userId, isArchived])
@@ -240,6 +244,7 @@ model Category {
   allocations  BudgetAllocation[]
   recurring    RecurringRule[]
   bills        Bill[]
+  loans        LoanTerms[]
 
   @@index([userId, kind, isArchived])
   @@index([parentId])
@@ -274,6 +279,9 @@ model Transaction {
   /// Set when created by a goal contribution (TRANSFER) or a bill payment (EXPENSE).
   goalContribution GoalContribution?
   billOccurrence   BillOccurrence?
+  /// Set when created by a loan payment: the principal TRANSFER or the interest EXPENSE.
+  loanPrincipalOf  LoanPayment?      @relation("LoanPrincipalTx")
+  loanInterestOf   LoanPayment?      @relation("LoanInterestTx")
   recurringRule    RecurringRule?    @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
 
   @@unique([recurringRuleId, occurrenceDate])
@@ -529,4 +537,57 @@ model AuditLog {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+/// Terms of a loan, one per LOAN account (ROADMAP Phase 4). The amount owed is always the
+/// account's ledger balance; these fields only describe the contract and drive EMI splits.
+model LoanTerms {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @db.Uuid
+  accountId          String   @unique @db.Uuid
+  /// Amount originally borrowed (may be more than owed today).
+  principal          Decimal  @db.Decimal(19, 4)
+  /// Annual interest rate in percent (9.5 = 9.5% a year), compounded monthly.
+  annualRate         Decimal  @db.Decimal(7, 4)
+  termMonths         Int      @db.SmallInt
+  /// Date of the first instalment.
+  firstPaymentDate   DateTime @db.Date
+  /// Monthly instalment. Defaults to the computed EMI; editable to match the lender.
+  emiAmount          Decimal  @db.Decimal(19, 4)
+  /// Account EMIs are usually paid from.
+  paymentAccountId   String   @db.Uuid
+  /// Expense category for the interest part (DECISIONS.md D-002).
+  interestCategoryId String   @db.Uuid
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @db.Timestamptz(3)
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account          Account       @relation("LoanAccount", fields: [accountId], references: [id], onDelete: Cascade)
+  paymentAccount   Account       @relation("LoanPaymentAccount", fields: [paymentAccountId], references: [id], onDelete: Cascade)
+  interestCategory Category      @relation(fields: [interestCategoryId], references: [id], onDelete: Cascade)
+  payments         LoanPayment[]
+
+  @@index([userId])
+}
+
+/// One instalment: a principal TRANSFER (payment account → loan account) and, when interest is
+/// due, an interest EXPENSE, created and removed together.
+model LoanPayment {
+  id                     String   @id @default(uuid()) @db.Uuid
+  loanId                 String   @db.Uuid
+  userId                 String   @db.Uuid
+  date                   DateTime @db.Date
+  principal              Decimal  @db.Decimal(19, 4)
+  interest               Decimal  @db.Decimal(19, 4)
+  principalTransactionId String?  @unique @db.Uuid
+  interestTransactionId  String?  @unique @db.Uuid
+  createdAt              DateTime @default(now()) @db.Timestamptz(3)
+
+  loan                 LoanTerms    @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  principalTransaction Transaction? @relation("LoanPrincipalTx", fields: [principalTransactionId], references: [id], onDelete: SetNull)
+  interestTransaction  Transaction? @relation("LoanInterestTx", fields: [interestTransactionId], references: [id], onDelete: SetNull)
+
+  @@index([loanId, date])
+  @@index([userId])
 }

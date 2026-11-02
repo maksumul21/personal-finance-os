@@ -116,6 +116,19 @@ describe("posting rules", () => {
     expect(totals.totalBalance.toString()).toBe("100");
     expect(totals.unconvertedCount).toBe(1);
   });
+
+  it("net worth keeps money moved into an investment account and subtracts debt", () => {
+    // Bank 100 000 → transfer 40 000 to an investment account; card owes 5 000.
+    const totals = accountTotals([
+      { type: "BANK", isArchived: false, baseBalance: "60000" },
+      { type: "INVESTMENT", isArchived: false, baseBalance: "40000" },
+      { type: "CREDIT_CARD", isArchived: false, baseBalance: "-5000" },
+      { type: "SAVINGS", isArchived: true, baseBalance: "999" },
+    ]);
+    expect(totals.totalBalance.toString()).toBe("60000");
+    expect(totals.totalLiabilities.toString()).toBe("5000");
+    expect(totals.netWorth.toString()).toBe("95000");
+  });
 });
 
 describe("ledger invariants (property-based)", () => {

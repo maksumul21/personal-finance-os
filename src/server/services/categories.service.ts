@@ -37,7 +37,8 @@ async function assertKindChangeable(tx: DbTx, userId: string, id: string) {
   const transactions = await tx.transaction.count({ where: inTree });
   const rules = await tx.recurringRule.count({ where: inTree });
   const bills = await tx.bill.count({ where: inTree });
-  if (transactions + rules + bills > 0) {
+  const loans = await tx.loanTerms.count({ where: { userId, OR: [{ interestCategoryId: id }, { interestCategory: { parentId: id } }] } });
+  if (transactions + rules + bills + loans > 0) {
     throw new UserFacingError(
       "This category or one of its subcategories is in use, so it can't change between income and expense.",
       "kind",
@@ -105,8 +106,9 @@ export async function deleteCategory(userId: string, id: string) {
     // Sequential: a transaction runs on one connection, which can't execute queries concurrently.
     const rules = await tx.recurringRule.count({ where: { userId, categoryId: id } });
     const bills = await tx.bill.count({ where: { userId, categoryId: id } });
-    if (rules + bills > 0) {
-      throw new UserFacingError("A recurring transaction or bill uses this category. Change or delete those first.");
+    const loans = await tx.loanTerms.count({ where: { userId, interestCategoryId: id } });
+    if (rules + bills + loans > 0) {
+      throw new UserFacingError("A recurring transaction, bill or loan uses this category. Change or delete those first.");
     }
     if (existing._count.allocations > 0) {
       throw new UserFacingError("A budget uses this category. Remove it from the budget or archive the category instead.");

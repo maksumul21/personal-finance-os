@@ -1,6 +1,5 @@
 import "server-only";
 import { format, parseISO } from "date-fns";
-import { isMarkedToMarket } from "@/domain/accounts";
 import type { Thresholds } from "@/domain/budget";
 import { pickRate, toBase } from "@/domain/fx";
 import { buildInsights, type Insight } from "@/domain/insights";
@@ -112,18 +111,18 @@ async function monthlyTotals(userId: string, from: Day, to: Day) {
 }
 
 /**
- * Month-end net worth from accounts (assets − liabilities), excluding investment containers.
+ * Month-end net worth from active accounts (assets − liabilities), matching the net worth KPI.
  * Opening balances count from their opening date; foreign ones convert at the latest recorded
- * rate. Investments and manual assets join this series in Phase 4.
+ * rate. Investment accounts count at ledger balance until market valuation (D-022).
  */
 async function netWorthByMonth(userId: string, baseCurrency: string, months: string[]) {
   const lastDay = endOfMonthDay(`${months.at(-1)}-01`);
   const [accounts, entries, rates] = await Promise.all([
-    db.account.findMany({ where: { userId }, select: { type: true, currency: true, openingBalance: true, openingDate: true } }),
+    db.account.findMany({ where: { userId, isArchived: false }, select: { currency: true, openingBalance: true, openingDate: true } }),
     db.$queryRaw<{ month: string; total: unknown }[]>`
       SELECT to_char(date_trunc('month', e."date"), 'YYYY-MM') AS month, SUM(e."baseAmount") AS total
       FROM "LedgerEntry" e JOIN "Account" a ON a."id" = e."accountId"
-      WHERE e."userId" = ${userId}::uuid AND a."type" <> 'INVESTMENT' AND e."date" <= ${dayToDb(lastDay)}::date
+      WHERE e."userId" = ${userId}::uuid AND NOT a."isArchived" AND e."date" <= ${dayToDb(lastDay)}::date
       GROUP BY 1 ORDER BY 1`,
     db.exchangeRate.findMany({ where: { userId }, select: { currency: true, date: true, rate: true } }),
   ]);
@@ -133,7 +132,7 @@ async function netWorthByMonth(userId: string, baseCurrency: string, months: str
     const end = endOfMonthDay(`${m}-01`);
     let total = ZERO;
     for (const a of accounts) {
-      if (isMarkedToMarket(a.type) || dbToDay(a.openingDate) > end) continue;
+      if (dbToDay(a.openingDate) > end) continue;
       const base = toBase(a.openingBalance, a.currency, baseCurrency, pickRate(recorded, a.currency, "9999-12-31"));
       if (base === null) return null; // can't value this month honestly
       total = total.plus(base);
@@ -239,7 +238,6 @@ export async function getDashboard(opts: {
   });
 
   const rate = savingsRate(now.income, now.expenses);
-  const netWorthNow = toMoney(accounts.totals.totalBalance).minus(toMoney(accounts.totals.totalLiabilities));
   const fmt = (v: string) => formatMoney(v, baseCurrency, { pref: opts.pref, compactDecimals: true });
 
   const insights = buildInsights({
@@ -269,7 +267,7 @@ export async function getDashboard(opts: {
     kpis: {
       totalBalance: accounts.totals.totalBalance,
       liabilities: accounts.totals.totalLiabilities,
-      netWorth: toMoneyString(netWorthNow),
+      netWorth: accounts.totals.netWorth,
       unconvertedCount: accounts.totals.unconvertedCount,
       income: toMoneyString(now.income),
       expenses: toMoneyString(now.expenses),
