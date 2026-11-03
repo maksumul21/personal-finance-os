@@ -32,6 +32,8 @@ import { StatusLabel } from "@/features/bills/components/bill-status";
 import { useComposer } from "@/features/transactions/components/composer";
 import { TransactionRow } from "@/features/transactions/components/transaction-row";
 import type { DashboardDTO } from "@/server/queries/dashboard.query";
+import type { SafeToSpendDTO } from "@/server/queries/safe-to-spend.query";
+import { SafeToSpendCard } from "./safe-to-spend-card";
 
 const PERIODS: Record<string, string> = {
   THIS_MONTH: "This month",
@@ -188,6 +190,7 @@ export function DashboardView({
   preset,
   months,
   today,
+  safeToSpend,
 }: {
   data: DashboardDTO;
   pref: NumberFormatPref;
@@ -195,6 +198,7 @@ export function DashboardView({
   preset: string;
   months: number;
   today: string;
+  safeToSpend: SafeToSpendDTO;
 }) {
   const composer = useComposer();
   const { set, pending } = useParamNav();
@@ -287,6 +291,8 @@ export function DashboardView({
           )}
         </Kpi>
       </div>
+
+      <SafeToSpendCard data={safeToSpend} currency={c} pref={pref} />
 
       {empty ? (
         <EmptyState

@@ -12,11 +12,11 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
 | 4 — Debt, investments, net worth | Done and tested |
-| 5 — Planning tools and reports | In progress: calendar done; **Safe-to-spend next** |
+| 5 — Planning tools and reports | In progress: calendar and safe-to-spend done; **Cash-flow forecasting next** |
 | 6 — Import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 15 tested, 7 logic-tested, 3 partial, 5 not started (see CHECKLIST.md).
-140 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 16 tested, 7 logic-tested, 3 partial, 4 not started (see CHECKLIST.md).
+145 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -25,6 +25,15 @@ Of the 30 PRD modules: 15 tested, 7 logic-tested, 3 partial, 5 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-03 — Safe-to-spend (Phase 5, module 2)
+
+- Formula approved by the product owner (D-032). `domain/safe-to-spend.ts`,
+  `queries/safe-to-spend.query.ts`, dashboard card with an expandable breakdown; no schema change.
+- Tests: 3 unit + 2 integration; 145 total pass. Browser with real data: only Cash (−৳150) is marked
+  spendable, so the card shows a ৳150 shortfall with "Your spendable accounts are below zero."
+  (wording fixed during the check); 375 px OK.
+- Not committed (awaiting approval).
 
 ### 2026-11-02 — Financial calendar (Phase 5, module 1)
 

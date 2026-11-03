@@ -28,7 +28,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 18 | Financial calendar | Tested | `/calendar`: month grid (week start from settings), bills (paid/overdue/due/projected beyond horizon), recurring projections, EMIs (paid + due until payoff), goal target dates, daily spending; month totals; day agenda (D-031). 3 unit + 3 integration tests; browser render, day select, month navigation, 375 px OK. |
 | 19 | Reports & analytics | Not started | Dashboard charts only; no reports page or export. |
 | 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
-| 21 | Safe-to-spend | Not started | `includeInSafeToSpend` flag on accounts only. |
+| 21 | Safe-to-spend | Tested | Dashboard card: amount (or shortfall) until the day before next income, per-day figure, expandable breakdown of accounts, commitments and goal savings (D-032). 3 unit + 2 integration tests; browser check with real data, 375 px OK. |
 | 22 | What-if calculator | Not started | — |
 | 23 | Cash-flow forecasting | Not started | Recurrence engine is ready to reuse. |
 | 24 | Financial health score | Not started | Expense-to-income ratio exists in `domain/metrics`. |
@@ -142,5 +142,9 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
   - [x] `domain/calendar.ts` (grid, EMI dates, totals) + `queries/calendar.query.ts`; no schema change (D-031)
   - [x] `/calendar` page + nav; phone layout keeps the grid in view
   - [x] 3 unit + 3 integration tests; browser check
-- [ ] Safe-to-spend — **next** (formula to confirm against the original PRD)
+- [x] Safe-to-spend (formula approved 2026-11-03)
+  - [x] `domain/safe-to-spend.ts` + `queries/safe-to-spend.query.ts`; no schema change (D-032)
+  - [x] Dashboard card with breakdown
+  - [x] 3 unit + 2 integration tests; browser check
+- [ ] Cash-flow forecasting — **next**
 - [ ] Remaining Phase 5–6 modules: see ROADMAP.md
