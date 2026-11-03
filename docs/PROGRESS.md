@@ -12,11 +12,11 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
 | 4 — Debt, investments, net worth | Done and tested |
-| 5 — Planning tools and reports | In progress: calendar and safe-to-spend done; **Cash-flow forecasting next** |
+| 5 — Planning tools and reports | In progress: calendar, safe-to-spend, forecast done; **Reports & analytics next** |
 | 6 — Import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 16 tested, 7 logic-tested, 3 partial, 4 not started (see CHECKLIST.md).
-145 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 17 tested, 7 logic-tested, 3 partial, 3 not started (see CHECKLIST.md).
+151 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -25,6 +25,16 @@ Of the 30 PRD modules: 16 tested, 7 logic-tested, 3 partial, 4 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-03 — Cash-flow forecasting (Phase 5, module 3)
+
+- Shared `queries/scheduled-flows.ts` (signed flows into/out of an account pool); safe-to-spend now
+  uses it. `domain/forecast.ts`, `queries/forecast.query.ts`, `/forecast` page (D-033).
+- Tests: 3 unit + 3 integration; 151 total pass. Browser with real data: start ৳54,785, day-to-day
+  ৳215 ÷ 2 days = ৳107.50/day, 89 days → ৳9,567.50, end ৳45,217.50 (all checked by hand); toggle and
+  horizon links work; 375 px OK. The first request after a dev-server start bounced to sign-in once
+  (known issue in ROADMAP technical debt).
+- Not committed (awaiting approval).
 
 ### 2026-11-03 — Safe-to-spend (Phase 5, module 2)
 

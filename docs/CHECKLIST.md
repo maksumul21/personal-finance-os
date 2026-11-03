@@ -30,7 +30,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
 | 21 | Safe-to-spend | Tested | Dashboard card: amount (or shortfall) until the day before next income, per-day figure, expandable breakdown of accounts, commitments and goal savings (D-032). 3 unit + 2 integration tests; browser check with real data, 375 px OK. |
 | 22 | What-if calculator | Not started | — |
-| 23 | Cash-flow forecasting | Not started | Recurrence engine is ready to reuse. |
+| 23 | Cash-flow forecasting | Tested | `/forecast`: 30/90/180-day daily projection, lowest point, first day below zero, end balance, flow list with running balance, optional day-to-day spending (D-033). Shared flow builder also powers safe-to-spend. 3 unit + 3 integration tests; browser figures reconciled by hand; 375 px OK. |
 | 24 | Financial health score | Not started | Expense-to-income ratio exists in `domain/metrics`. |
 | 25 | Settings & customisation | Tested | Profile, currency lock, timezone, formats, thresholds, theme, exchange rates. |
 | 26 | Data import & export | Not started | — |
@@ -146,5 +146,9 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
   - [x] `domain/safe-to-spend.ts` + `queries/safe-to-spend.query.ts`; no schema change (D-032)
   - [x] Dashboard card with breakdown
   - [x] 3 unit + 2 integration tests; browser check
-- [ ] Cash-flow forecasting — **next**
+- [x] Cash-flow forecasting
+  - [x] Shared `queries/scheduled-flows.ts`; safe-to-spend refactored onto it (its tests unchanged and passing)
+  - [x] `domain/forecast.ts` + `queries/forecast.query.ts` + `/forecast` page; linked from Calendar and Safe-to-spend
+  - [x] 3 unit + 3 integration tests; browser check
+- [ ] Reports & analytics — **next**
 - [ ] Remaining Phase 5–6 modules: see ROADMAP.md

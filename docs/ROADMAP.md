@@ -16,8 +16,8 @@ with integration tests, UI, browser check — before the next starts. Status of 
 4. ~~Financial calendar~~ — done 2026-11-02 (D-031). Was: bills, recurring, goal target dates, loan EMIs in one view.
 5. ~~Safe-to-spend~~ — done 2026-11-03 (D-032). Was: balances of `includeInSafeToSpend` accounts − upcoming bills/recurring
    expenses before next income − goal commitments. Formula to confirm against the original PRD.
-6. **Cash-flow forecasting** (next) — project balances from recurring rules, bills and EMIs.
-7. **Reports & analytics** — period reports, category trends, expense-to-income (§14.2), export.
+6. ~~Cash-flow forecasting~~ — done 2026-11-03 (D-033). Was: project balances from recurring rules, bills and EMIs.
+7. **Reports & analytics** (next) — period reports, category trends, expense-to-income (§14.2), export.
 8. **What-if calculator** — scenarios over the forecast (extra EMI, new expense, raise).
 9. **Financial health score** — composite of savings rate, emergency-fund months, debt ratio,
    budget adherence. Weights to confirm against the original PRD.

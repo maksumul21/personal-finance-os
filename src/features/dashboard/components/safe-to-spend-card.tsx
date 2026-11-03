@@ -125,6 +125,10 @@ export function SafeToSpendCard({ data, currency, pref }: { data: SafeToSpendDTO
             </ul>
           </div>
           <p className="text-xs text-muted-foreground md:col-span-3">
+            <Link href="/forecast" className="mr-1 text-primary hover:underline">
+              See the cash-flow forecast
+            </Link>
+            ·{" "}
             {data.unconvertedCount > 0 && `${data.unconvertedCount} item(s) left out for lack of an exchange rate. `}
             Credit-card bills count when you pay the card, not when you spend. Calculated from your records; not financial advice.
           </p>

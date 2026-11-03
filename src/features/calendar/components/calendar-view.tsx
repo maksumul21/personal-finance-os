@@ -50,6 +50,11 @@ export function CalendarView({ data, pref }: { data: CalendarDTO; pref: NumberFo
       <PageHeader
         title="Financial calendar"
         description="Bills, recurring transactions, loan instalments and goal dates in one place, with what was actually spent each day."
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/forecast">Cash-flow forecast</Link>
+          </Button>
+        }
       />
 
       <div className="space-y-6">

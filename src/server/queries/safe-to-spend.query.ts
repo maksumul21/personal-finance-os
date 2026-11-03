@@ -1,14 +1,10 @@
 import "server-only";
-import { emiDueDates } from "@/domain/calendar";
-import { pickRate, toBase, type RecordedRate } from "@/domain/fx";
-import { ZERO, toMoney, toMoneyString, type MoneyInput } from "@/domain/money";
-import { dayToDb, dbToDay, endOfMonthDay, type Day } from "@/domain/period";
-import { nextOnOrAfter, occurrencesBetween, type RepeatUnit } from "@/domain/recurrence";
+import { ZERO, toMoney, toMoneyString } from "@/domain/money";
+import { addDaysTo, endOfMonthDay, type Day } from "@/domain/period";
 import { safeToSpend, windowEnd, type Commitment, type GoalNeed } from "@/domain/safe-to-spend";
-import { db } from "../db";
 import { getAccountsOverview } from "./accounts.query";
-import { getDebts } from "./debts.query";
 import { getGoals } from "./goals.query";
+import { getScheduledFlows } from "./scheduled-flows";
 
 export interface SafeToSpendDTO {
   today: Day;
@@ -30,85 +26,23 @@ export interface SafeToSpendDTO {
 
 export async function getSafeToSpend(userId: string, baseCurrency: string, today: Day): Promise<SafeToSpendDTO> {
   const monthEnd = endOfMonthDay(today);
-  const [overview, rules, debts, goals, rateRows] = await Promise.all([
-    getAccountsOverview(userId, baseCurrency),
-    db.recurringRule.findMany({
-      where: { userId, status: "ACTIVE", nextOccurrence: { not: null } },
-      select: { type: true, amount: true, description: true, accountId: true, toAccountId: true, unit: true, interval: true, startDate: true, endDate: true, nextOccurrence: true, category: { select: { name: true } } },
-    }),
-    getDebts(userId, baseCurrency, today),
-    getGoals(userId, today),
-    db.exchangeRate.findMany({ where: { userId }, select: { currency: true, date: true, rate: true } }),
-  ]);
-  const rates: RecordedRate[] = rateRows.map((r) => ({ currency: r.currency, date: dbToDay(r.date), rate: r.rate }));
-  let unconvertedCount = 0;
-  const inBase = (amount: MoneyInput, currency: string) => {
-    const v = toBase(amount, currency, baseCurrency, pickRate(rates, currency, "9999-12-31"));
-    if (v === null) unconvertedCount++;
-    return v;
-  };
+  const [overview, goals] = await Promise.all([getAccountsOverview(userId, baseCurrency), getGoals(userId, today)]);
 
   // Spendable money: active asset accounts the user marked, never investment accounts.
   const eligible = overview.accounts.filter((a) => !a.isArchived && a.includeInSafeToSpend && a.nature === "ASSET" && a.type !== "INVESTMENT");
   const included = eligible.filter((a) => a.baseBalance !== null);
-  unconvertedCount += eligible.length - included.length;
   const includedIds = new Set(included.map((a) => a.id));
 
-  // Next scheduled income (any active income rule), on or after today.
-  const scheduleOf = (r: (typeof rules)[number]) => ({
-    start: dbToDay(r.startDate),
-    end: r.endDate ? dbToDay(r.endDate) : null,
-    unit: r.unit as RepeatUnit,
-    interval: r.interval,
-  });
-  const incomeDates = rules
-    .filter((r) => r.type === "INCOME")
-    .map((r) => {
-      const next = dbToDay(r.nextOccurrence!);
-      return next >= today ? next : nextOnOrAfter(scheduleOf(r), today);
-    })
-    .filter((d): d is Day => d !== null)
-    .sort();
-  // Income due today doesn't count as the next one; take the first after today.
-  const nextIncome = incomeDates.find((d) => d > today) ?? null;
+  // Next income can fall after month-end, so look a year ahead and cut at the window's end.
+  const scheduled = await getScheduledFlows(userId, baseCurrency, today, addDaysTo(today, 366), includedIds);
+  const nextIncome = scheduled.nextIncome;
   const end = windowEnd(today, monthEnd, nextIncome);
+  const unconvertedCount = eligible.length - included.length + scheduled.unconvertedCount;
 
-  const commitments: Commitment[] = [];
-
-  // Unpaid bills paid from a spendable account (card-paid bills don't touch cash yet).
-  const occurrences = await db.billOccurrence.findMany({
-    where: { userId, state: "PENDING", dueDate: { lte: dayToDb(end) }, bill: { paymentAccountId: { in: [...includedIds] } } },
-    include: { bill: { select: { name: true, paymentAccount: { select: { currency: true } } } } },
-  });
-  for (const o of occurrences) {
-    const amount = inBase(o.amount, o.bill.paymentAccount.currency);
-    if (amount) commitments.push({ kind: "BILL", title: o.bill.name, date: dbToDay(o.dueDate), amount });
-  }
-
-  // Scheduled expenses from, and transfers out of, spendable accounts (recurring is base currency only).
-  for (const r of rules) {
-    if (!includedIds.has(r.accountId)) continue;
-    const isExpense = r.type === "EXPENSE";
-    const leavesPool = r.type === "TRANSFER" && r.toAccountId !== null && !includedIds.has(r.toAccountId);
-    if (!isExpense && !leavesPool) continue;
-    for (const d of occurrencesBetween(scheduleOf(r), dbToDay(r.nextOccurrence!), end)) {
-      commitments.push({
-        kind: isExpense ? "RECURRING" : "TRANSFER",
-        title: r.description || r.category?.name || (isExpense ? "Scheduled expense" : "Scheduled transfer"),
-        date: d,
-        amount: r.amount.toString(),
-      });
-    }
-  }
-
-  // Loan instalments paid from a spendable account, including any overdue one.
-  for (const l of debts.loans) {
-    if (!l.terms || !l.nextDue || !l.remainingMonths || !includedIds.has(l.terms.paymentAccountId)) continue;
-    emiDueDates(l.terms.firstPaymentDate, l.nextDue, l.remainingMonths, "0000-01-01", end).forEach((d, i) => {
-      const amount = inBase(i === 0 && l.suggestedPayment ? l.suggestedPayment : l.terms!.emiAmount, l.currency);
-      if (amount) commitments.push({ kind: "EMI", title: `${l.name} EMI`, date: d, amount });
-    });
-  }
+  // Only money leaving the pool is a commitment; scheduled income isn't spent before it arrives.
+  const commitments: Commitment[] = scheduled.flows
+    .filter((f) => f.date <= end && f.amount.isNegative() && f.kind !== "INCOME")
+    .map((f) => ({ kind: f.kind as Commitment["kind"], title: f.title, date: f.date, amount: f.amount.negated() }));
 
   // Goals: what's still needed this month to stay on pace (net deposits so far count).
   const monthStart = `${today.slice(0, 7)}-01`;
