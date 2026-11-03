@@ -26,7 +26,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 16 | Investment tracker | Tested | Holdings, buy/sell at average cost, recorded prices, market value, unrealised/realised gains, allocation, cash-funding check (D-029). 7 unit (incl. property) + 3 integration tests; browser: unfunded buy refused, buy → price → +20% gain → dashboard net worth reconciled; 375 px OK. Gaps: no automatic price feed (by design), no dividends shortcut (record as income). |
 | 17 | Net worth tracker | Tested | `/net-worth`: balance sheet (cash, investments, other assets / cards, loans, other liabilities), month-end history with table view, change vs last month-end and 12 months ago; manual assets/liabilities with dated valuations (D-030). Dashboard KPI and trend use the same module. 3 unit + 3 integration tests; browser add → reconcile → delete; 375 px OK. |
 | 18 | Financial calendar | Tested | `/calendar`: month grid (week start from settings), bills (paid/overdue/due/projected beyond horizon), recurring projections, EMIs (paid + due until payoff), goal target dates, daily spending; month totals; day agenda (D-031). 3 unit + 3 integration tests; browser render, day select, month navigation, 375 px OK. |
-| 19 | Reports & analytics | Not started | Dashboard charts only; no reports page or export. |
+| 19 | Reports & analytics | Tested | `/reports`: presets + custom range, like-for-like comparison, summary incl. expense-to-income (§14.2), category breakdowns with drill-down, monthly table, largest expenses, account movement; CSV export with injection protection (D-034). 3 unit + 3 integration tests; browser figures and CSV checked; 375 px OK. Further reports depend on the original PRD. |
 | 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
 | 21 | Safe-to-spend | Tested | Dashboard card: amount (or shortfall) until the day before next income, per-day figure, expandable breakdown of accounts, commitments and goal savings (D-032). 3 unit + 2 integration tests; browser check with real data, 375 px OK. |
 | 22 | What-if calculator | Not started | — |
@@ -150,5 +150,9 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
   - [x] Shared `queries/scheduled-flows.ts`; safe-to-spend refactored onto it (its tests unchanged and passing)
   - [x] `domain/forecast.ts` + `queries/forecast.query.ts` + `/forecast` page; linked from Calendar and Safe-to-spend
   - [x] 3 unit + 3 integration tests; browser check
-- [ ] Reports & analytics — **next**
+- [x] Reports & analytics (v1)
+  - [x] `domain/reports.ts` (breakdown, change, safe CSV), `queries/reports.query.ts`, `features/reports/params.ts`
+  - [x] `/reports` page + nav; `/reports/export` CSV
+  - [x] 3 unit + 3 integration tests; browser check incl. CSV bytes and unauthenticated redirect
+- [ ] What-if calculator — **next** (scenarios to confirm with the product owner)
 - [ ] Remaining Phase 5–6 modules: see ROADMAP.md

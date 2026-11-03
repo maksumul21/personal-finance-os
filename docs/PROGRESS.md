@@ -12,11 +12,11 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
 | 4 — Debt, investments, net worth | Done and tested |
-| 5 — Planning tools and reports | In progress: calendar, safe-to-spend, forecast done; **Reports & analytics next** |
+| 5 — Planning tools and reports | In progress: calendar, safe-to-spend, forecast, reports done; **What-if calculator next** |
 | 6 — Import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 17 tested, 7 logic-tested, 3 partial, 3 not started (see CHECKLIST.md).
-151 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 18 tested, 7 logic-tested, 3 partial, 2 not started (see CHECKLIST.md).
+157 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -25,6 +25,15 @@ Of the 30 PRD modules: 17 tested, 7 logic-tested, 3 partial, 3 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-03 — Reports & analytics (Phase 5, module 4)
+
+- `domain/reports.ts`, `queries/reports.query.ts`, `features/reports/params.ts`, `/reports` page,
+  `/reports/export` CSV route (D-034).
+- Tests: 3 unit + 3 integration (all figures hand-computed first); 157 total pass. Browser with real
+  data: ৳215 spend split Food 69.8% / Housing 30.2%, ৳3.36/day over 64 days; drill-down, presets,
+  CSV headers + UTF-8 BOM bytes verified; unauthenticated export redirects to sign-in; 375 px OK.
+- Not committed (awaiting approval).
 
 ### 2026-11-03 — Cash-flow forecasting (Phase 5, module 3)
 
