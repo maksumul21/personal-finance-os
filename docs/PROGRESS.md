@@ -12,11 +12,11 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 2 — Core finance | Done and audited (logic + browser) |
 | 3 — Goals, recurring, bills | Logic audited and integration-tested; UI create/pay flows not clicked through |
 | 4 — Debt, investments, net worth | Done and tested |
-| 5 — Planning tools and reports | In progress: calendar, safe-to-spend, forecast, reports done; **What-if calculator next** |
+| 5 — Planning tools and reports | In progress: calendar, safe-to-spend, forecast, reports, what-if done; **Financial health score next** |
 | 6 — Import/export, SaaS readiness | Not started |
 
-Of the 30 PRD modules: 18 tested, 7 logic-tested, 3 partial, 2 not started (see CHECKLIST.md).
-157 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+Of the 30 PRD modules: 19 tested, 7 logic-tested, 3 partial, 1 not started (see CHECKLIST.md).
+163 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
 
 ## Open items needing the product owner
 
@@ -25,6 +25,16 @@ Of the 30 PRD modules: 18 tested, 7 logic-tested, 3 partial, 2 not started (see 
   templates pointing at `/auth/confirm`, `CRON_SECRET` on Vercel.
 
 ## Sessions
+
+### 2026-11-03 — What-if calculator (Phase 5, module 5)
+
+- Scenarios approved by the product owner (D-035). `domain/what-if.ts`, `/what-if` page; links from
+  Forecast and the Debts payoff planner; no schema change.
+- Tests: 6 unit; 163 total pass. Browser with real data: −৳5,000 on the 1st applies on 1 Dec and
+  1 Jan, taking the 90-day end from ৳45,217.50 to ৳35,217.50 (hand-checked). The user's "Umrah" goal
+  exposed a counting mismatch with the Goals page (this month vs next); fixed so ৳15,000/month is
+  "in time" on both. 375 px OK.
+- Not committed (awaiting approval).
 
 ### 2026-11-03 — Reports & analytics (Phase 5, module 4)
 

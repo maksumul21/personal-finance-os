@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { KpiCard } from "@/components/finance/kpi-card";
+import { Button } from "@/components/ui/button";
 import { PageHeader, SectionCard } from "@/components/layout/page";
 import { formatAxisMoney, formatMoney, type NumberFormatPref } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,11 @@ export function ForecastView({ data, currency, pref }: { data: ForecastDTO; curr
       <PageHeader
         title="Cash-flow forecast"
         description="Where your cash, bank and wallet balances are heading, from what's scheduled and how you usually spend. An estimate from your records, not financial advice."
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/what-if">Try a what-if</Link>
+          </Button>
+        }
       />
 
       <div className="space-y-6">

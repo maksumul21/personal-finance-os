@@ -29,7 +29,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 19 | Reports & analytics | Tested | `/reports`: presets + custom range, like-for-like comparison, summary incl. expense-to-income (§14.2), category breakdowns with drill-down, monthly table, largest expenses, account movement; CSV export with injection protection (D-034). 3 unit + 3 integration tests; browser figures and CSV checked; 375 px OK. Further reports depend on the original PRD. |
 | 20 | Financial insights | Tested | Rule-based, 11 unit tests; dismissal per browser (D-016). |
 | 21 | Safe-to-spend | Tested | Dashboard card: amount (or shortfall) until the day before next income, per-day figure, expandable breakdown of accounts, commitments and goal savings (D-032). 3 unit + 2 integration tests; browser check with real data, 375 px OK. |
-| 22 | What-if calculator | Not started | — |
+| 22 | What-if calculator | Tested | `/what-if`: extra loan payment, monthly change on the forecast, goal by monthly saving (D-035). 6 unit tests (amortisation-consistent, hand-checked forecast figures, Goals-page-consistent month counting); browser check with real data; 375 px OK. |
 | 23 | Cash-flow forecasting | Tested | `/forecast`: 30/90/180-day daily projection, lowest point, first day below zero, end balance, flow list with running balance, optional day-to-day spending (D-033). Shared flow builder also powers safe-to-spend. 3 unit + 3 integration tests; browser figures reconciled by hand; 375 px OK. |
 | 24 | Financial health score | Not started | Expense-to-income ratio exists in `domain/metrics`. |
 | 25 | Settings & customisation | Tested | Profile, currency lock, timezone, formats, thresholds, theme, exchange rates. |
@@ -154,5 +154,8 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
   - [x] `domain/reports.ts` (breakdown, change, safe CSV), `queries/reports.query.ts`, `features/reports/params.ts`
   - [x] `/reports` page + nav; `/reports/export` CSV
   - [x] 3 unit + 3 integration tests; browser check incl. CSV bytes and unauthenticated redirect
-- [ ] What-if calculator — **next** (scenarios to confirm with the product owner)
+- [x] What-if calculator (scenarios approved 2026-11-03)
+  - [x] `domain/what-if.ts` + `/what-if` page; linked from Forecast and Debts
+  - [x] 6 unit tests; browser check (fixed: goal months now count this month, matching the Goals page)
+- [ ] Financial health score — **next** (components and weights to confirm with the product owner)
 - [ ] Remaining Phase 5–6 modules: see ROADMAP.md

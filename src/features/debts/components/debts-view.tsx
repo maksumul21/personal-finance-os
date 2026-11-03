@@ -215,6 +215,9 @@ function PayoffPlanner({ data, fmt }: { data: NonNullable<DebtsDTO["payoff"]>; f
         <Button type="submit" variant="outline" disabled={pending}>
           {pending ? "Calculating…" : "Compare"}
         </Button>
+        <Link href="/what-if" className="text-xs text-primary hover:underline">
+          What if I pay extra on one loan?
+        </Link>
         {data.excludedCount > 0 && (
           <p className="text-xs text-muted-foreground">{data.excludedCount} loan(s) left out: no details, paid off or another currency.</p>
         )}
