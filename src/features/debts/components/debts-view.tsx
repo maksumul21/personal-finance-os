@@ -50,7 +50,7 @@ function LoanCard({ loan, fmt, open }: { loan: LoanDTO; fmt: (v: string, c?: str
   const pct = loan.repaidPct === null ? 0 : Math.min(100, Math.max(0, Number(loan.repaidPct)));
 
   return (
-    <li className="rounded-xl border bg-card">
+    <li className="rounded-2xl border bg-card shadow-card">
       <div className="p-5">
         <div className="flex items-start gap-3">
           <FinanceIcon name={loan.icon} color={loan.color} />

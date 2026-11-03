@@ -26,6 +26,14 @@ Of the 30 PRD modules: 19 tested, 7 logic-tested, 3 partial, 1 not started (see 
 
 ## Sessions
 
+### 2026-11-03 — UI refresh, budget picker fix, categories from scratch
+
+- Premium visual refresh: tokens, elevation, typography, grouped sidebar, KPI tiles, cards, split sign-in.
+- Budget category picker: sibling subcategories stay available after one has a limit (regression test).
+- New users start with no categories (D-036); empty-state guidance on Settings → Categories and in every
+  category picker. Default tree moved to a test fixture. 165 tests pass.
+- Not committed (awaiting approval).
+
 ### 2026-11-03 — What-if calculator (Phase 5, module 5)
 
 - Scenarios approved by the product owner (D-035). `domain/what-if.ts`, `/what-if` page; links from

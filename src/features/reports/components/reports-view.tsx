@@ -41,7 +41,7 @@ function Change({ value, upIsGood }: { value: string | null; upIsGood: boolean }
 
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-2xl border bg-card shadow-card p-4">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <p className="tabular mt-1 text-xl font-semibold tracking-tight">{value}</p>
       {sub && <p className="mt-1 text-xs">{sub}</p>}
@@ -202,7 +202,7 @@ export function ReportsView({ data, preset, pref }: { data: ReportDTO; preset: R
       />
 
       <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           <Stat label="Income" value={fmt(s.income)} sub={<Change value={s.incomeChangePct} upIsGood />} />
           <Stat label="Expenses" value={fmt(s.expenses)} sub={<Change value={s.expensesChangePct} upIsGood={false} />} />
           <Stat label="Net saved" value={<span className={cn(s.net.startsWith("-") && "text-negative")}>{fmt(s.net)}</span>} sub={<span className="text-muted-foreground">was {fmt(s.previousNet)}</span>} />

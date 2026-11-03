@@ -12,6 +12,7 @@ import { formatMoney } from "@/lib/format";
 import type { ComposerAccount, ComposerCategory } from "@/server/queries/composer.query";
 import type { LoanDTO } from "@/server/queries/debts.query";
 import { saveLoanTermsAction } from "../actions";
+import { NoCategoriesHint } from "@/features/categories/components/no-categories-hint";
 
 /** The EMI the server would compute, shown live; null while inputs are incomplete. */
 function previewEmi(principal: string, rate: string, months: string): string | null {
@@ -146,18 +147,22 @@ export function LoanTermsDialog({
             </div>
             <div className="space-y-2">
               <Label>Interest category</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full" aria-invalid={!!errors.interestCategoryId}>
-                  <SelectValue placeholder="Choose category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {expenseCats.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.group ? `${c.group} › ${c.name}` : c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {expenseCats.length === 0 ? (
+                <NoCategoriesHint kind="EXPENSE" />
+              ) : (
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="w-full" aria-invalid={!!errors.interestCategoryId}>
+                    <SelectValue placeholder="Choose category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseCats.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.group ? `${c.group} › ${c.name}` : c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {err("interestCategoryId")}
             </div>
           </div>

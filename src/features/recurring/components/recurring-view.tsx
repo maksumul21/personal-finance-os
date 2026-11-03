@@ -38,6 +38,7 @@ import type { ComposerData } from "@/server/queries/composer.query";
 import type { RecurringDTO } from "@/server/queries/recurring.query";
 import { createRecurringAction, deleteRecurringAction, setRecurringStatusAction, updateRecurringAction } from "../actions";
 import type { RecurringFormInput } from "../schemas";
+import { NoCategoriesHint } from "@/features/categories/components/no-categories-hint";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
 
@@ -152,28 +153,32 @@ function RuleForm({
         ) : (
           <div className="space-y-2">
             <Label>Category</Label>
-            <Select value={v.categoryId ?? ""} onValueChange={(id) => set({ categoryId: id })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose category" />
-              </SelectTrigger>
-              <SelectContent className="max-h-80">
-                {categories
-                  .filter((c) => c.group === null)
-                  .map((g) => (
-                    <SelectGroup key={g.id}>
-                      <SelectLabel>{g.name}</SelectLabel>
-                      <SelectItem value={g.id}>{g.name} (general)</SelectItem>
-                      {categories
-                        .filter((c) => c.group === g.name)
-                        .map((c) => (
-                          <SelectItem key={c.id} value={c.id} className="pl-5">
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                    </SelectGroup>
-                  ))}
-              </SelectContent>
-            </Select>
+            {categories.length === 0 ? (
+              <NoCategoriesHint kind={kind} />
+            ) : (
+              <Select value={v.categoryId ?? ""} onValueChange={(id) => set({ categoryId: id })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose category" />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  {categories
+                    .filter((c) => c.group === null)
+                    .map((g) => (
+                      <SelectGroup key={g.id}>
+                        <SelectLabel>{g.name}</SelectLabel>
+                        <SelectItem value={g.id}>{g.name} (general)</SelectItem>
+                        {categories
+                          .filter((c) => c.group === g.name)
+                          .map((c) => (
+                            <SelectItem key={c.id} value={c.id} className="pl-5">
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                      </SelectGroup>
+                    ))}
+                </SelectContent>
+              </Select>
+            )}
             {err("categoryId")}
           </div>
         )}

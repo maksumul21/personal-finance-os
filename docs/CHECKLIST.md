@@ -32,7 +32,7 @@ integration tests pass, but the UI flow wasn't clicked through in the audit · *
 | 22 | What-if calculator | Tested | `/what-if`: extra loan payment, monthly change on the forecast, goal by monthly saving (D-035). 6 unit tests (amortisation-consistent, hand-checked forecast figures, Goals-page-consistent month counting); browser check with real data; 375 px OK. |
 | 23 | Cash-flow forecasting | Tested | `/forecast`: 30/90/180-day daily projection, lowest point, first day below zero, end balance, flow list with running balance, optional day-to-day spending (D-033). Shared flow builder also powers safe-to-spend. 3 unit + 3 integration tests; browser figures reconciled by hand; 375 px OK. |
 | 24 | Financial health score | Not started | Expense-to-income ratio exists in `domain/metrics`. |
-| 25 | Settings & customisation | Tested | Profile, currency lock, timezone, formats, thresholds, theme, exchange rates. |
+| 25 | Settings & customisation (incl. own categories from scratch, D-036) | Tested | Profile, currency lock, timezone, formats, thresholds, theme, exchange rates. |
 | 26 | Data import & export | Not started | — |
 | 27 | Multi-currency | Partial | Per-account currency, recorded rates, conversions, cross-currency transfers. Recurring limited to base currency; foreign account opening balances use latest rate in the trend. |
 | 28 | Security & data isolation | Tested | `requireUser` everywhere, `{id,userId}` scoping, RLS on all tables, isolation tests, open redirect fixed, dev bypass hardened. Gaps: no CSP; no app-level rate limiting (Supabase limits auth). |

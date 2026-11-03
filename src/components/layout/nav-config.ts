@@ -37,7 +37,16 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/reports", label: "Reports & Analytics", icon: BarChart3, available: true },
 ];
 
-export const SETTINGS_ITEM: NavItem = { href: "/settings", label: "Settings", icon: Settings, available: true };
+/** Sidebar sections, in PRD §3 order; each lists the hrefs it shows. */
+export const NAV_GROUPS: { label: string; hrefs: string[] }[] = [
+  { label: "Overview", hrefs: ["/dashboard"] },
+  { label: "Money", hrefs: ["/transactions", "/budgets", "/accounts"] },
+  { label: "Plan", hrefs: ["/goals", "/bills", "/debts"] },
+  { label: "Wealth", hrefs: ["/investments", "/net-worth"] },
+  { label: "Insights", hrefs: ["/calendar", "/reports"] },
+];
+
+export const SETTINGS_ITEM: NavItem ={ href: "/settings", label: "Settings", icon: Settings, available: true };
 
 /**
  * Mobile bottom bar: two sections, the add button in the middle, one more section, then "More"

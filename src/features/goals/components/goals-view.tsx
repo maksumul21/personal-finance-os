@@ -138,7 +138,7 @@ function GoalCard({
   const isEF = goal.goalType === "EMERGENCY_FUND";
 
   return (
-    <li className={cn("rounded-xl border bg-card", archived && "opacity-70")}>
+    <li className={cn("rounded-2xl border bg-card shadow-card", archived && "opacity-70")}>
       <div className="p-5">
         <div className="flex items-start gap-3">
           <FinanceIcon name={goal.icon} color={goal.color} />

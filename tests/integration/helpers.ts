@@ -2,15 +2,50 @@ import { randomUUID } from "node:crypto";
 import { buildPosting, type LedgerInput } from "@/domain/ledger";
 import { dayToDb } from "@/domain/period";
 import type { AccountFormValues } from "@/features/accounts/schemas";
-import { db } from "@/server/db";
+import type { CategoryKind } from "@/generated/prisma/client";
+import { db, type DbTx } from "@/server/db";
 import { provisionUser } from "@/server/services/provisioning.service";
+import { EXPENSE_FIXTURE, INCOME_FIXTURE, type FixtureCategory } from "../support/category-fixture";
 
 const created: string[] = [];
 
-export async function createTestUser() {
+async function seedCategories(tx: DbTx, userId: string, kind: CategoryKind, groups: FixtureCategory[]) {
+  for (const [i, group] of groups.entries()) {
+    const parent = await tx.category.create({
+      data: { userId, kind, name: group.name, icon: group.icon, color: group.color, isEssential: group.isEssential ?? false, sortOrder: i },
+    });
+    if (group.children?.length) {
+      await tx.category.createMany({
+        data: group.children.map((child, j) => ({
+          userId,
+          kind,
+          parentId: parent.id,
+          name: child.name,
+          icon: child.icon,
+          color: group.color,
+          isEssential: child.isEssential ?? false,
+          sortOrder: j,
+        })),
+      });
+    }
+  }
+}
+
+/** A provisioned user exactly as sign-up leaves them: settings and a Cash account, no categories. */
+export async function createBareUser() {
   const id = randomUUID();
   created.push(id);
   await db.$transaction((tx) => provisionUser(tx, { id, email: `${id}@test.pfos.localhost`, name: "Test" }));
+  return id;
+}
+
+/** A provisioned user plus the fixture category tree, so tests can refer to categories by name. */
+export async function createTestUser() {
+  const id = await createBareUser();
+  await db.$transaction(async (tx) => {
+    await seedCategories(tx, id, "INCOME", INCOME_FIXTURE);
+    await seedCategories(tx, id, "EXPENSE", EXPENSE_FIXTURE);
+  });
   return id;
 }
 

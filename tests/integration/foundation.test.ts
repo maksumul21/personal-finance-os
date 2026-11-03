@@ -17,27 +17,35 @@ import {
 } from "@/server/services/categories.service";
 import { provisionUser } from "@/server/services/provisioning.service";
 import { updatePreferences } from "@/server/services/settings.service";
-import { accountValues, anyCategory, cleanupTestUsers, createTestUser, postTransaction } from "./helpers";
+import { accountValues, anyCategory, cleanupTestUsers, createBareUser, createTestUser, postTransaction } from "./helpers";
 
 afterEach(cleanupTestUsers);
 afterAll(() => db.$disconnect());
 
 describe("provisioning", () => {
-  it("creates settings, the default category tree and a Cash account, idempotently", async () => {
-    const userId = await createTestUser();
+  it("creates settings and a Cash account but no categories (D-036), idempotently", async () => {
+    const userId = await createBareUser();
     await db.$transaction((tx) => provisionUser(tx, { id: userId, email: "ignored@x.test" }));
 
     const settings = await db.userSettings.findUnique({ where: { userId } });
     expect(settings?.numberFormat).toBe("LAKH");
 
-    const expense = await getCategoryTree(userId, "EXPENSE");
-    const income = await getCategoryTree(userId, "INCOME");
-    expect(expense.map((g) => g.name)).toEqual(["Housing", "Food", "Transportation", "Personal", "Financial", "Lifestyle"]);
-    expect(expense.find((g) => g.name === "Food")?.children.map((c) => c.name)).toContain("Groceries");
-    expect(income).toHaveLength(8);
+    expect(await getCategoryTree(userId, "EXPENSE")).toEqual([]);
+    expect(await getCategoryTree(userId, "INCOME")).toEqual([]);
 
     const accounts = await db.account.findMany({ where: { userId } });
     expect(accounts.map((a) => a.name)).toEqual(["Cash"]);
+  });
+
+  it("a new user's own categories work straight away", async () => {
+    const userId = await createBareUser();
+    const food = await createCategory(userId, { name: "Food", kind: "EXPENSE", parentId: null, icon: "utensils", color: "#ea580c", isEssential: true });
+    const dinner = await createCategory(userId, { name: "Dinner", kind: "EXPENSE", parentId: food.id, icon: "utensils", color: "#ea580c", isEssential: false });
+    const cash = await db.account.findFirstOrThrow({ where: { userId, name: "Cash" } });
+    await postTransaction(userId, { type: "EXPENSE", accountId: cash.id, amount: "450" }, { categoryId: dinner.id });
+    const tree = await getCategoryTree(userId, "EXPENSE");
+    expect(tree.map((g) => g.name)).toEqual(["Food"]);
+    expect(tree[0].children.map((c) => c.name)).toEqual(["Dinner"]);
   });
 });
 

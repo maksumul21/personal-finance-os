@@ -25,7 +25,7 @@ import { updateThemeAction } from "@/features/settings/actions";
 import { useComposer } from "@/features/transactions/components/composer";
 import { cn } from "@/lib/utils";
 import { Logo } from "./logo";
-import { COLLAPSE_COOKIE, MOBILE_LEFT, MOBILE_RIGHT, NAV_ITEMS, SETTINGS_ITEM, isActive, type NavItem } from "./nav-config";
+import { COLLAPSE_COOKIE, MOBILE_LEFT, MOBILE_RIGHT, NAV_GROUPS, NAV_ITEMS, SETTINGS_ITEM, isActive, type NavItem } from "./nav-config";
 
 export interface ShellUser {
   name: string | null;
@@ -64,11 +64,11 @@ function NavLink({
   const active = isActive(pathname, item.href);
   const Icon = item.icon;
   const base =
-    "group flex h-9 items-center gap-3 rounded-md px-2.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring";
+    "group flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   const content = (
     <>
-      <Icon className={cn("size-[18px] shrink-0", active ? "text-sidebar-accent-foreground" : "text-muted-foreground")} />
+      <Icon className={cn("size-[18px] shrink-0 transition-colors", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
       {!collapsed && <span className={cn("min-w-0 flex-1 truncate", autoRail && "max-lg:hidden")}>{item.label}</span>}
       {!collapsed && !item.available && (
         <Badge variant="secondary" className={cn("h-5 shrink-0 px-1.5 text-[10px] font-medium text-muted-foreground", autoRail && "max-lg:hidden")}>
@@ -87,8 +87,8 @@ function NavLink({
       className={cn(
         base,
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+          ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-card ring-1 ring-sidebar-border"
+          : "text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground",
         collapsed && "justify-center px-0",
         autoRail && "max-lg:justify-center max-lg:px-0",
       )}
@@ -149,7 +149,7 @@ function UserMenu({ user, collapsed, autoRail = false }: { user: ShellUser; coll
       <DropdownMenuTrigger asChild>
         <button
           className={cn(
-            "flex w-full items-center gap-3 rounded-md p-1.5 text-left outline-none hover:bg-sidebar-accent/60 focus-visible:ring-2 focus-visible:ring-ring",
+            "flex w-full items-center gap-3 rounded-xl p-1.5 text-left outline-none transition-colors hover:bg-sidebar-accent hover:shadow-card focus-visible:ring-2 focus-visible:ring-ring",
             collapsed && "justify-center",
             autoRail && "max-lg:justify-center",
           )}
@@ -157,7 +157,7 @@ function UserMenu({ user, collapsed, autoRail = false }: { user: ShellUser; coll
         >
           <Avatar className="size-8">
             {user.avatarUrl && <AvatarImage src={user.avatarUrl} alt="" />}
-            <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">{initials(user)}</AvatarFallback>
+            <AvatarFallback className="bg-gradient-to-br from-primary/90 to-primary/60 text-xs font-semibold text-primary-foreground">{initials(user)}</AvatarFallback>
           </Avatar>
           {!collapsed && (
             <span className={cn("min-w-0 flex-1", autoRail && "max-lg:hidden")}>
@@ -186,9 +186,24 @@ function UserMenu({ user, collapsed, autoRail = false }: { user: ShellUser; coll
 
 function NavList({ collapsed, autoRail, onNavigate }: { collapsed: boolean; autoRail?: boolean; onNavigate?: () => void }) {
   return (
-    <nav aria-label="Main" className="flex flex-col gap-0.5">
-      {NAV_ITEMS.map((item) => (
-        <NavLink key={item.href} item={item} collapsed={collapsed} autoRail={autoRail} onNavigate={onNavigate} />
+    <nav aria-label="Main" className={cn("flex flex-col", collapsed ? "gap-2" : "gap-4", autoRail && !collapsed && "max-lg:gap-2")}>
+      {NAV_GROUPS.map((group, i) => (
+        <div key={group.label} className="flex flex-col gap-0.5">
+          {collapsed ? (
+            i > 0 && <div className="mx-auto mb-1 h-px w-6 bg-sidebar-border" aria-hidden />
+          ) : (
+            <>
+              <p className={cn("px-2.5 pb-1 text-[11px] font-semibold tracking-[0.06em] text-muted-foreground/80 uppercase", autoRail && "max-lg:hidden")}>
+                {group.label}
+              </p>
+              {autoRail && i > 0 && <div className="mx-auto mb-1 hidden h-px w-6 bg-sidebar-border max-lg:block" aria-hidden />}
+            </>
+          )}
+          {group.hrefs.map((href) => {
+            const item = NAV_ITEMS.find((n) => n.href === href)!;
+            return <NavLink key={href} item={item} collapsed={collapsed} autoRail={autoRail} onNavigate={onNavigate} />;
+          })}
+        </div>
       ))}
     </nav>
   );
@@ -247,12 +262,12 @@ export function AppShell({
           collapsed ? "w-[68px]" : "w-[68px] lg:w-[264px]",
         )}
       >
-        <div className={cn("flex h-14 items-center px-4", collapsed ? "justify-center px-0" : "max-lg:justify-center max-lg:px-0")}>
+        <div className={cn("flex h-16 items-center px-5", collapsed ? "justify-center px-0" : "max-lg:justify-center max-lg:px-0")}>
           <Link href="/dashboard" aria-label="Finance OS home">
             <Logo collapsed={collapsed} textClassName="max-lg:hidden" />
           </Link>
         </div>
-        <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="no-scrollbar flex-1 overflow-y-auto px-3 py-3">
           <NavList collapsed={collapsed} autoRail />
         </div>
         <div className="space-y-1 border-t border-sidebar-border px-3 py-3">
@@ -273,7 +288,7 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/90 px-4 backdrop-blur md:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-xl md:hidden">
           <Link href="/dashboard" aria-label="Finance OS home">
             <Logo />
           </Link>
@@ -288,19 +303,23 @@ export function AppShell({
           </div>
         )}
 
-        <main className="flex-1 pb-24 md:pb-10">{children}</main>
+        <main className="relative flex-1 pb-24 md:pb-10">
+          {/* A faint brand glow behind the page header; purely decorative. */}
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-72 bg-[radial-gradient(70%_100%_at_50%_0%,var(--page-glow),transparent)]" />
+          <div className="relative">{children}</div>
+        </main>
 
         {/* Mobile bottom navigation */}
         <nav
           aria-label="Quick"
-          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
         >
           {MOBILE_LEFT.map((href) => bottomLink(navItem(href)))}
           <div className="flex h-16 items-center justify-center">
             <button
               onClick={() => composer.open()}
               aria-label="Add transaction"
-              className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="grid size-12 place-items-center rounded-2xl bg-gradient-to-b from-primary to-primary/85 text-primary-foreground shadow-raised ring-1 ring-primary/30 outline-none transition-transform active:scale-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Plus className="size-6" />
             </button>

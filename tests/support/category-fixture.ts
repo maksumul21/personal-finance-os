@@ -1,17 +1,18 @@
 /**
- * Default categories seeded for every new user (PRD §5.3, §5.4).
+ * A realistic category tree for tests. New users start with no categories and create their own
+ * (DECISIONS.md D-036); integration tests seed this set so they can refer to categories by name.
  * Icons are Lucide icon names; colours come from the categorical chart palette.
  */
 
-export interface DefaultCategory {
+export interface FixtureCategory {
   name: string;
   icon: string;
   color: string;
   isEssential?: boolean;
-  children?: Omit<DefaultCategory, "children" | "color">[];
+  children?: Omit<FixtureCategory, "children" | "color">[];
 }
 
-export const DEFAULT_INCOME_CATEGORIES: DefaultCategory[] = [
+export const INCOME_FIXTURE: FixtureCategory[] = [
   { name: "Salary", icon: "briefcase", color: "#16a34a" },
   { name: "Business Income", icon: "store", color: "#0d9488" },
   { name: "Freelancing", icon: "laptop", color: "#0891b2" },
@@ -22,7 +23,7 @@ export const DEFAULT_INCOME_CATEGORIES: DefaultCategory[] = [
   { name: "Other Income", icon: "circle-plus", color: "#64748b" },
 ];
 
-export const DEFAULT_EXPENSE_CATEGORIES: DefaultCategory[] = [
+export const EXPENSE_FIXTURE: FixtureCategory[] = [
   {
     name: "Housing",
     icon: "house",

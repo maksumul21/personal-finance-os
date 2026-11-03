@@ -185,7 +185,7 @@ export function TrendCharts({
   const cursor = { fill: "var(--muted)", opacity: 0.5 };
 
   return (
-    <section className="rounded-xl border bg-card">
+    <section className="rounded-2xl border bg-card shadow-card">
       <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div role="tablist" aria-label="Trend" className="-mx-1 flex gap-1 overflow-x-auto">
           {(Object.keys(VIEWS) as View[]).map((v) => (

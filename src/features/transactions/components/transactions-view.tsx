@@ -267,7 +267,7 @@ export function TransactionsView({
           />
         ) : (
           page.groups.map((g) => (
-            <section key={g.date} className="overflow-hidden rounded-xl border bg-card">
+            <section key={g.date} className="overflow-hidden rounded-2xl border bg-card shadow-card">
               <header className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2 sm:px-5">
                 <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{dayHeading(g.date, data.today)}</h2>
                 <p className="tabular text-xs text-muted-foreground">

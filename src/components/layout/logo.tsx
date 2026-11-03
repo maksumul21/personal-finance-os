@@ -5,7 +5,7 @@ export function LogoMark({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground",
+        "grid size-8 shrink-0 place-items-center rounded-[10px] bg-gradient-to-br from-primary to-[oklch(0.42_0.2_290)] text-sm font-semibold text-primary-foreground shadow-[inset_0_1px_0_0_rgb(255_255_255/0.25),0_1px_2px_0_rgb(16_24_40/0.2)]",
         className,
       )}
     >
@@ -20,7 +20,11 @@ export function Logo({ collapsed = false, textClassName }: { collapsed?: boolean
   return (
     <span className="flex items-center gap-2.5">
       <LogoMark />
-      {!collapsed && <span className={cn("text-[15px] font-semibold tracking-tight", textClassName)}>Finance OS</span>}
+      {!collapsed && (
+        <span className={cn("text-[15px] font-semibold tracking-[-0.02em]", textClassName)}>
+          Finance<span className="text-muted-foreground font-medium"> OS</span>
+        </span>
+      )}
     </span>
   );
 }

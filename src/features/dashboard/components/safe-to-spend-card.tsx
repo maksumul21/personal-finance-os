@@ -22,7 +22,7 @@ export function SafeToSpendCard({ data, currency, pref }: { data: SafeToSpendDTO
 
   if (data.accounts.length === 0) {
     return (
-      <section className="mt-4 rounded-xl border bg-card p-5 text-sm">
+      <section className="mt-4 rounded-2xl border bg-card shadow-card p-5 text-sm">
         <p className="font-medium">Safe to spend</p>
         <p className="mt-1 text-muted-foreground">
           No account is marked &ldquo;include in safe-to-spend&rdquo;. Turn it on for your everyday accounts in{" "}
@@ -36,7 +36,7 @@ export function SafeToSpendCard({ data, currency, pref }: { data: SafeToSpendDTO
   }
 
   return (
-    <section className="mt-4 rounded-xl border bg-card" aria-labelledby="sts-title">
+    <section className="mt-4 rounded-2xl border bg-card shadow-card" aria-labelledby="sts-title">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3 p-5">
         <div className="flex items-center gap-3">
           <span className={cn("grid size-10 place-items-center rounded-full", short ? "bg-negative-soft text-negative" : "bg-positive-soft text-positive")}>

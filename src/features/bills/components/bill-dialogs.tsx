@@ -16,6 +16,7 @@ import type { BillDTO, OccurrenceDTO } from "@/server/queries/bills.query";
 import type { ComposerData } from "@/server/queries/composer.query";
 import { createBillAction, payBillAction, updateBillAction } from "../actions";
 import type { BillFormInput } from "../schemas";
+import { NoCategoriesHint } from "@/features/categories/components/no-categories-hint";
 
 export function BillFormDialog({
   open,
@@ -86,28 +87,32 @@ export function BillFormDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={v.categoryId} onValueChange={(id) => set({ categoryId: id })}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose category" />
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  {categories
-                    .filter((c) => c.group === null)
-                    .map((g) => (
-                      <SelectGroup key={g.id}>
-                        <SelectLabel>{g.name}</SelectLabel>
-                        <SelectItem value={g.id}>{g.name} (general)</SelectItem>
-                        {categories
-                          .filter((c) => c.group === g.name)
-                          .map((c) => (
-                            <SelectItem key={c.id} value={c.id} className="pl-5">
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                      </SelectGroup>
-                    ))}
-                </SelectContent>
-              </Select>
+              {categories.length === 0 ? (
+                <NoCategoriesHint kind="EXPENSE" />
+              ) : (
+                <Select value={v.categoryId} onValueChange={(id) => set({ categoryId: id })}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose category" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    {categories
+                      .filter((c) => c.group === null)
+                      .map((g) => (
+                        <SelectGroup key={g.id}>
+                          <SelectLabel>{g.name}</SelectLabel>
+                          <SelectItem value={g.id}>{g.name} (general)</SelectItem>
+                          {categories
+                            .filter((c) => c.group === g.name)
+                            .map((c) => (
+                              <SelectItem key={c.id} value={c.id} className="pl-5">
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                        </SelectGroup>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
               {err("categoryId")}
             </div>
             <div className="space-y-2">

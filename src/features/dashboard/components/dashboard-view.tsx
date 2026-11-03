@@ -34,6 +34,7 @@ import { TransactionRow } from "@/features/transactions/components/transaction-r
 import type { DashboardDTO } from "@/server/queries/dashboard.query";
 import type { SafeToSpendDTO } from "@/server/queries/safe-to-spend.query";
 import { SafeToSpendCard } from "./safe-to-spend-card";
+import { KpiIcon } from "@/components/finance/kpi-card";
 
 const PERIODS: Record<string, string> = {
   THIS_MONTH: "This month",
@@ -100,13 +101,13 @@ function Kpi({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4 sm:p-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <Icon className="size-4 text-muted-foreground" aria-hidden />
+    <div className="rounded-2xl border bg-card p-4 shadow-card transition-shadow hover:shadow-raised sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] font-medium text-muted-foreground">{label}</p>
+        <KpiIcon icon={Icon} />
       </div>
-      <div className="mt-2 text-xl font-semibold tracking-tight sm:text-2xl">{children}</div>
-      {footer && <p className="mt-1 text-xs">{footer}</p>}
+      <div className="figure mt-3 text-xl font-semibold sm:text-[26px]">{children}</div>
+      {footer && <p className="mt-1.5 text-xs">{footer}</p>}
     </div>
   );
 }
@@ -237,7 +238,7 @@ export function DashboardView({
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         <Kpi label="Total balance" icon={Wallet} footer={<span className="text-muted-foreground">Active asset accounts</span>}>
           <Money value={k.totalBalance} currency={c} pref={pref} tone="auto" compactDecimals />
         </Kpi>

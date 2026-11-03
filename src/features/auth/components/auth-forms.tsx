@@ -34,7 +34,7 @@ export function LoginForm({ next, linkError }: { next: string; linkError: boolea
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Sign in</CardTitle>
+        <CardTitle className="text-2xl tracking-[-0.025em]">Sign in</CardTitle>
         <CardDescription>Welcome back to Personal Finance OS.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -51,15 +51,15 @@ export function LoginForm({ next, linkError }: { next: string; linkError: boolea
           <input type="hidden" name="next" value={next} />
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required />
+            <Input id="email" name="email" type="email" autoComplete="email" required className="h-10" />
           </div>
           {mode === "password" && (
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" autoComplete="current-password" required minLength={8} />
+              <Input id="password" name="password" type="password" autoComplete="current-password" required minLength={8} className="h-10" />
             </div>
           )}
-          <Button type="submit" className="w-full" disabled={passwordPending || magicPending}>
+          <Button type="submit" size="lg" className="w-full" disabled={passwordPending || magicPending}>
             {mode === "password"
               ? passwordPending
                 ? "Signing in…"
@@ -69,9 +69,15 @@ export function LoginForm({ next, linkError }: { next: string; linkError: boolea
                 : "Email me a sign-in link"}
           </Button>
         </form>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden>
+          <span className="h-px flex-1 bg-border" />
+          or
+          <span className="h-px flex-1 bg-border" />
+        </div>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
+          size="lg"
           className="w-full"
           onClick={() => setMode(mode === "password" ? "magic" : "password")}
         >
@@ -93,7 +99,7 @@ export function SignupForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Create your account</CardTitle>
+        <CardTitle className="text-2xl tracking-[-0.025em]">Create your account</CardTitle>
         <CardDescription>Track, budget and plan in one place.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -101,18 +107,18 @@ export function SignupForm() {
         <form action={action} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Full name</Label>
-            <Input id="name" name="name" autoComplete="name" />
+            <Input id="name" name="name" autoComplete="name" className="h-10" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required />
+            <Input id="email" name="email" type="email" autoComplete="email" required className="h-10" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} />
+            <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={8} className="h-10" />
             <p className="text-xs text-muted-foreground">At least 8 characters.</p>
           </div>
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending ? "Creating account…" : "Create account"}
           </Button>
         </form>

@@ -18,6 +18,7 @@ import type { ComposerData } from "@/server/queries/composer.query";
 import type { TransactionDTO } from "@/server/queries/transactions.query";
 import { createTransactionAction, updateTransactionAction } from "../actions";
 import { transactionFormSchema } from "../schemas";
+import { NoCategoriesHint } from "@/features/categories/components/no-categories-hint";
 
 type TxType = "EXPENSE" | "INCOME" | "TRANSFER";
 
@@ -262,39 +263,43 @@ function ComposerForm({ data, options, onDone }: { data: ComposerData; options: 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Category</Label>
-            <Controller
-              control={control}
-              name="categoryId"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full" aria-invalid={!!e.categoryId}>
-                    <SelectValue placeholder="Choose category" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-80">
-                    {categories
-                      .filter((c) => c.group === null)
-                      .map((g) => {
-                        const children = categories.filter((c) => c.group === g.name);
-                        return (
-                          <SelectGroup key={g.id}>
-                            {children.length > 0 && <SelectLabel>{g.name}</SelectLabel>}
-                            <SelectItem value={g.id}>
-                              <FinanceIcon name={g.icon} color={g.color} size="sm" className="size-5 rounded-md" />
-                              {children.length > 0 ? `${g.name} (general)` : g.name}
-                            </SelectItem>
-                            {children.map((c) => (
-                              <SelectItem key={c.id} value={c.id} className="pl-4">
-                                <FinanceIcon name={c.icon} color={c.color} size="sm" className="size-5 rounded-md" />
-                                {c.name}
+            {categories.length === 0 ? (
+              <NoCategoriesHint kind={kind} />
+            ) : (
+              <Controller
+                control={control}
+                name="categoryId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full" aria-invalid={!!e.categoryId}>
+                      <SelectValue placeholder="Choose category" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-80">
+                      {categories
+                        .filter((c) => c.group === null)
+                        .map((g) => {
+                          const children = categories.filter((c) => c.group === g.name);
+                          return (
+                            <SelectGroup key={g.id}>
+                              {children.length > 0 && <SelectLabel>{g.name}</SelectLabel>}
+                              <SelectItem value={g.id}>
+                                <FinanceIcon name={g.icon} color={g.color} size="sm" className="size-5 rounded-md" />
+                                {children.length > 0 ? `${g.name} (general)` : g.name}
                               </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-              )}
-            />
+                              {children.map((c) => (
+                                <SelectItem key={c.id} value={c.id} className="pl-4">
+                                  <FinanceIcon name={c.icon} color={c.color} size="sm" className="size-5 rounded-md" />
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            )}
             <FieldError message={e.categoryId?.message} />
           </div>
           <div className="space-y-2">

@@ -121,6 +121,22 @@ describe("budgets", () => {
     ).rejects.toThrow(/expense categories/);
   });
 
+  it("allows limits on several subcategories of one group, then refuses the group itself", async () => {
+    const s = await setup();
+    const { id } = await createBudget(
+      s.userId,
+      budget({ name: "Nov", periodType: "MONTHLY", start: "2026-11-01", method: "STANDARD", incomeSource: "ACTUAL", plannedIncome: "" }),
+      6,
+    );
+    await addAllocation(s.userId, line({ budgetId: id, kind: "EXPENSE_CATEGORY", categoryId: await s.cat("Groceries"), allocatedAmount: "6000" }));
+    await addAllocation(s.userId, line({ budgetId: id, kind: "EXPENSE_CATEGORY", categoryId: await s.cat("Restaurants"), allocatedAmount: "2000" }));
+    await expect(
+      addAllocation(s.userId, line({ budgetId: id, kind: "EXPENSE_CATEGORY", categoryId: await s.cat("Food", true), allocatedAmount: "100" })),
+    ).rejects.toThrow(/already limited inside/);
+    const d = (await getBudgetDetail(s.userId, id, DEFAULT_THRESHOLDS))!;
+    expect(d.lines.map((l) => l.name).sort()).toEqual(["Groceries", "Restaurants"]);
+  });
+
   it("50/30/20 creates the savings line from planned income; templates report bucket targets", async () => {
     const s = await setup();
     const { id } = await createBudget(

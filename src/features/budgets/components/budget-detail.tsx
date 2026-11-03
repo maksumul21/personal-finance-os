@@ -47,6 +47,7 @@ import {
 } from "../actions";
 import { METHOD_INFO, PERIOD_LABELS } from "./budget-form-dialog";
 import { periodText } from "./budgets-list";
+import { NoCategoriesHint } from "@/features/categories/components/no-categories-hint";
 
 type Fmt = (v: string) => string;
 
@@ -251,28 +252,37 @@ function AddLineDialog({
           {kind === "EXPENSE_CATEGORY" ? (
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={categoryId} onValueChange={setCategoryId}>
-                <SelectTrigger className="w-full" aria-invalid={!!errors.categoryId}>
-                  <SelectValue placeholder="Choose category" />
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  {available
-                    .filter((c) => c.group === null)
-                    .map((g) => (
-                      <SelectGroup key={g.id}>
-                        <SelectLabel>{g.name}</SelectLabel>
-                        <SelectItem value={g.id}>All of {g.name}</SelectItem>
-                        {available
-                          .filter((c) => c.group === g.name)
-                          .map((c) => (
-                            <SelectItem key={c.id} value={c.id} className="pl-5">
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                      </SelectGroup>
-                    ))}
-                </SelectContent>
-              </Select>
+              {expense.length === 0 ? (
+                <NoCategoriesHint kind="EXPENSE" />
+              ) : (
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="w-full" aria-invalid={!!errors.categoryId}>
+                    <SelectValue placeholder="Choose category" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-80">
+                    {/* Sections come from every group: a group can be unavailable as a whole (one of
+                        its subcategories already has a limit) while its other subcategories remain. */}
+                    {expense
+                      .filter((g) => g.group === null)
+                      .map((g) => {
+                        const groupFree = available.includes(g);
+                        const children = available.filter((c) => c.group === g.name);
+                        if (!groupFree && children.length === 0) return null;
+                        return (
+                          <SelectGroup key={g.id}>
+                            <SelectLabel>{g.name}</SelectLabel>
+                            {groupFree && <SelectItem value={g.id}>All of {g.name}</SelectItem>}
+                            {children.map((c) => (
+                              <SelectItem key={c.id} value={c.id} className="pl-5">
+                                {c.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        );
+                      })}
+                  </SelectContent>
+                </Select>
+              )}
               {errors.categoryId && <p className="text-xs text-negative">{errors.categoryId}</p>}
             </div>
           ) : (
@@ -450,7 +460,7 @@ export function BudgetDetail({
           { label: "Remaining", value: t.remaining, hint: t.usagePct ? `${t.usagePct}% used` : "Nothing budgeted yet", tone: "auto" as const },
           { label: "Unbudgeted spending", value: t.unbudgeted, hint: "Categories without a limit" },
         ].map((k) => (
-          <div key={k.label} className="rounded-xl border bg-card p-4 sm:p-5">
+          <div key={k.label} className="rounded-2xl border bg-card shadow-card p-4 sm:p-5">
             <p className="text-sm font-medium text-muted-foreground">{k.label}</p>
             <Money value={k.value} currency={currency} pref={pref} tone={k.tone ?? "neutral"} compactDecimals className="mt-2 block text-xl font-semibold tracking-tight sm:text-2xl" />
             <p className="mt-1 text-xs text-muted-foreground">{k.hint}</p>

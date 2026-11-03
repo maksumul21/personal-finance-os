@@ -212,12 +212,12 @@ export function AccountsView({
       />
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded-2xl border bg-card shadow-card p-5">
           <p className="text-sm font-medium text-muted-foreground">Total balance</p>
           <Money value={overview.totals.totalBalance} currency={overview.baseCurrency} pref={pref} tone="auto" className="mt-2 block text-2xl font-semibold tracking-tight" />
           <p className="mt-1 text-xs text-muted-foreground">Active asset accounts, excluding credit cards and loans.</p>
         </div>
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded-2xl border bg-card shadow-card p-5">
           <p className="text-sm font-medium text-muted-foreground">Owed on cards &amp; loans</p>
           <Money value={overview.totals.totalLiabilities} currency={overview.baseCurrency} pref={pref} className="mt-2 block text-2xl font-semibold tracking-tight" />
           <p className="mt-1 text-xs text-muted-foreground">Outstanding on active liability accounts.</p>

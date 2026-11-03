@@ -257,6 +257,22 @@ function Tree({ kind, groups }: { kind: Kind; groups: CategoryGroupDTO[] }) {
         </Button>
       }
     >
+      {groups.length === 0 && (
+        <div className="flex flex-col items-center px-6 py-12 text-center">
+          <span className="grid size-12 place-items-center rounded-2xl bg-accent text-accent-foreground ring-1 ring-primary/10">
+            <Plus className="size-5" aria-hidden />
+          </span>
+          <h3 className="mt-4 text-base font-semibold">Create your first {kind === "EXPENSE" ? "expense" : "income"} category</h3>
+          <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+            {kind === "EXPENSE"
+              ? "Start with a main category such as Food, then add subcategories inside it like Lunch and Dinner. Spending on a subcategory also counts towards its main category."
+              : "For example Salary, Freelancing or Business. You can add subcategories inside any of them."}
+          </p>
+          <Button className="mt-6" onClick={() => setDialog({ open: true, values: blank(kind) })}>
+            <Plus /> Add {kind === "EXPENSE" ? "expense" : "income"} category
+          </Button>
+        </div>
+      )}
       <ul className="divide-y">
         {groups.map((g) => (
           <li key={g.id}>
@@ -279,9 +295,17 @@ function Tree({ kind, groups }: { kind: Kind; groups: CategoryGroupDTO[] }) {
   );
 }
 
-export function CategoriesView({ expense, income }: { expense: CategoryGroupDTO[]; income: CategoryGroupDTO[] }) {
+export function CategoriesView({
+  expense,
+  income,
+  initialTab = "EXPENSE",
+}: {
+  expense: CategoryGroupDTO[];
+  income: CategoryGroupDTO[];
+  initialTab?: Kind;
+}) {
   return (
-    <Tabs defaultValue="EXPENSE">
+    <Tabs defaultValue={initialTab}>
       <TabsList>
         <TabsTrigger value="EXPENSE">Expenses</TabsTrigger>
         <TabsTrigger value="INCOME">Income</TabsTrigger>

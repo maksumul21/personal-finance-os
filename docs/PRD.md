@@ -39,7 +39,7 @@ Debt Management · Investments · Net Worth · Financial Calendar · Reports & A
 
 - Income, expense, transfer; edit, duplicate, delete; tags; notes; refunds (D-007).
 - §5.1 Transfers never count as income or expense.
-- §5.3 Default category tree (two levels, D-014).
+- §5.3 Categories in two levels (D-014). New users start with none and create their own (D-036, replaces the default tree).
 - §5.7 Recurring transactions, posted idempotently.
 - History with filters, search, sort, pagination.
 

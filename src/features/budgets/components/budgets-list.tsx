@@ -60,7 +60,7 @@ export function BudgetsList({
             <li key={b.id}>
               <Link
                 href={`/budgets/${b.id}`}
-                className="block rounded-xl border bg-card p-5 transition-colors outline-none hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+                className="block rounded-2xl border bg-card shadow-card p-5 transition-colors outline-none hover:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
