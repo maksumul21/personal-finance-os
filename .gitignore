@@ -44,3 +44,6 @@ next-env.d.ts
 
 # env templates are committed
 !.env.example
+
+# local database backups (personal data, never commit)
+/backups/
