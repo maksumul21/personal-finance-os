@@ -16,7 +16,7 @@ Session-by-session record of where work stands. `CHECKLIST.md` holds per-feature
 | 6 — Import/export, SaaS readiness | Not started |
 
 Of the 30 PRD modules: 19 tested, 7 logic-tested, 3 partial, 1 not started (see CHECKLIST.md).
-163 tests pass; typecheck, lint and `next build` are clean. Branch `phase-1/foundation`, no remote.
+163 tests pass; typecheck, lint and `next build` are clean. Branch `main`, pushed to the private GitHub repository `maksumul21/personal-finance-os`.
 
 ## Open items needing the product owner
 
